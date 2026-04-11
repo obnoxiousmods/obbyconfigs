@@ -70,4 +70,12 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: package-check-artifacts
-          path: dist/*
+          path: |
+            dist/obbyconfigs-*.tar.gz
+            dist/obbyconfigs-*.whl
+            dist/obbyinstaller.pyz
+            dist/obbyconfigs-*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.apk
+            dist/*.pkg.tar.zst

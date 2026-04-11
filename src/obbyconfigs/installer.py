@@ -184,6 +184,8 @@ def render_tmux_conf(paths: InstallPaths) -> str:
 
 def tmux_helper_scripts() -> dict[str, str]:
     return {
+        "git-info": read_template("tmux-bin/git-info"),
+        "os-icon": read_template("tmux-bin/os-icon"),
         "pane-title": read_template("tmux-bin/pane-title"),
         "pane-context": read_template("tmux-bin/pane-context"),
     }

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+path="${1:-$PWD}"
+
+if ! command -v git >/dev/null 2>&1; then
+  exit 0
+fi
+
+if ! git -C "$path" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  exit 0
+fi
+
+remote="$(git -C "$path" config --get remote.origin.url 2>/dev/null || true)"
+repo=""
+
+if [[ "$remote" =~ github.com[:/][^/]+/[^/.]+(\.git)?$ ]]; then
+  repo="${remote#*github.com[:/]}"
+elif [[ "$remote" =~ github.com[:/] ]]; then
+  repo="$(printf '%s' "$remote" | sed -E 's#^.*github.com[:/]##')"
+elif [[ -n "$remote" ]]; then
+  repo="$(basename "${remote%.git}")"
+fi
+
+repo="${repo%.git}"
+if [[ -z "$repo" || "$repo" == "$remote" ]]; then
+  top="$(git -C "$path" rev-parse --show-toplevel 2>/dev/null || true)"
+  repo="$(basename "${top:-repo}")"
+fi
+
+branch="$(git -C "$path" symbolic-ref --quiet --short HEAD 2>/dev/null || git -C "$path" rev-parse --short HEAD 2>/dev/null || true)"
+dirty=""
+if [[ -n "$(git -C "$path" status --porcelain 2>/dev/null)" ]]; then
+  dirty="*"
+fi
+
+tracking=""
+if git -C "$path" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+  read -r behind ahead < <(git -C "$path" rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null || printf '0 0')
+  [[ "${ahead:-0}" != "0" ]] && tracking+="↑${ahead}"
+  [[ "${behind:-0}" != "0" ]] && tracking+="↓${behind}"
+fi
+
+printf '%s' "$repo"
+[[ -n "$branch" ]] && printf ' %s%s' "$branch" "$dirty"
+[[ -n "$tracking" ]] && printf ' %s' "$tracking"
+printf '\n'
+exit 0

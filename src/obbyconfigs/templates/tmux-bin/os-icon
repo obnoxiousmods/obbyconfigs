@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+set -eu
+
+system="$(uname -s 2>/dev/null || printf unknown)"
+
+case "$system" in
+  Darwin)
+    printf ""
+    exit 0
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    printf ""
+    exit 0
+    ;;
+esac
+
+if [ -r /etc/os-release ]; then
+  os_id="$(. /etc/os-release && printf "%s" "${ID:-}")"
+  os_like="$(. /etc/os-release && printf "%s" "${ID_LIKE:-}")"
+else
+  os_id=""
+  os_like=""
+fi
+
+ids=" $os_id $os_like "
+
+case "$ids" in
+  *" arch "*|*" manjaro "*) printf "" ;;
+  *" ubuntu "*) printf "" ;;
+  *" debian "*) printf "" ;;
+  *" fedora "*) printf "" ;;
+  *" rhel "*|*" centos "*|*" rocky "*) printf "" ;;
+  *" opensuse "*|*" suse "*) printf "" ;;
+  *" alpine "*) printf "" ;;
+  *" nixos "*) printf "" ;;
+  *) printf "" ;;
+esac

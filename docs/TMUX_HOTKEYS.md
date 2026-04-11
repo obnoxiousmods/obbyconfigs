@@ -107,3 +107,13 @@ This config keeps both tmux-style and common terminal-style bindings. `Prefix` m
 ## Optional TPM
 
 - If `~/.tmux/plugins/tpm/tpm` exists, it is loaded automatically.
+
+## Status OS Icon
+
+- The left status bar calls the `os-icon` helper and detects Arch/Manjaro, Ubuntu, Debian, Fedora, RHEL-style, openSUSE/SUSE, Alpine, NixOS, macOS, Windows-like shells, or generic Linux.
+
+## Git Awareness
+
+- The right status bar calls the `git-info` helper for the active pane path.
+- Inside a Git checkout it shows the GitHub `owner/repo` when a GitHub remote is configured.
+- It also shows branch or short commit, a `*` dirty marker, and upstream ahead/behind markers.

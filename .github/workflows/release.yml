@@ -59,10 +59,30 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: release-artifacts
-          path: dist/*
+          path: |
+            dist/obbyconfigs-*.tar.gz
+            dist/obbyconfigs-*.whl
+            dist/obbyinstaller.pyz
+            dist/install.sh
+            dist/install.ps1
+            dist/obbyconfigs-*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.apk
+            dist/*.pkg.tar.zst
 
       - name: Create GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/obbyconfigs-*.tar.gz
+            dist/obbyconfigs-*.whl
+            dist/obbyinstaller.pyz
+            dist/install.sh
+            dist/install.ps1
+            dist/obbyconfigs-*.zip
+            dist/*.deb
+            dist/*.rpm
+            dist/*.apk
+            dist/*.pkg.tar.zst
