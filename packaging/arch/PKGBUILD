@@ -1,0 +1,50 @@
+# Maintainer: obnoxiousmods
+pkgname=obbyconfigs
+pkgver=0.5.0
+pkgrel=1
+pkgdesc="Obby's tmux, zsh, Powerlevel10k, nano, and terminal config installer"
+arch=("any")
+url="https://github.com/obnoxiousmods/obbyconfigs"
+license=("MIT")
+depends=(
+  "python"
+  "git"
+  "tmux"
+  "zsh"
+  "fzf"
+  "zoxide"
+  "ripgrep"
+  "eza"
+  "bat"
+  "curl"
+  "wget"
+  "unzip"
+  "nano"
+)
+optdepends=(
+  "github-cli: GitHub CLI integration"
+  "nodejs: Node.js PATH and prompt support"
+  "npm: npm tooling"
+  "python-pip: Python package installs"
+  "python-pipx: isolated Python tool installs"
+  "uv: uv Python package management"
+  "ttf-meslo-nerd: Meslo Nerd Font glyphs"
+  "ttf-jetbrains-mono-nerd: fallback Nerd Font glyphs"
+)
+makedepends=("python-build" "python-installer" "python-wheel")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/obnoxiousmods/obbyconfigs/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=("SKIP")
+
+build() {
+  cd "${pkgname}-${pkgver}"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm755 install.sh "$pkgdir/usr/share/obbyconfigs/install.sh"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/obbyconfigs/README.md"
+  install -Dm644 docs/TMUX_HOTKEYS.md "$pkgdir/usr/share/doc/obbyconfigs/TMUX_HOTKEYS.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/obbyconfigs/LICENSE"
+}

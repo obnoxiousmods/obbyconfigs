@@ -1,0 +1,5 @@
+obbyconfigs (0.5.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- obnoxiousmods <noreply@github.com>  Sat, 11 Apr 2026 12:35:00 -0700

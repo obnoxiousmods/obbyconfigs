@@ -1,10 +1,29 @@
 # obbyconfigs
 
-Obby terminal config installer for Arch Linux, Ubuntu, and Debian. It installs missing packages and applies the same tmux + zsh setup used on this machine: Manjaro/Dracula-style Powerlevel10k prompt, tmux powerline status, autosuggestions, syntax highlighting, history substring search, fzf hotkeys, zoxide, icon-aware `ls`, and a Tokyo Night Windows Terminal scheme.
+Obby terminal config installer for Linux and macOS. It installs missing packages and applies the same tmux + zsh setup used on this machine: Manjaro/Dracula-style Powerlevel10k prompt, tmux powerline status, autosuggestions, syntax highlighting, history substring search, fzf hotkeys, zoxide, icon-aware `ls`, nano colors, and a Tokyo Night Windows Terminal scheme.
 
 The repo is also a proper `uv` Python package with a CLI named `obbyinstaller`.
 
 ## Quick install
+
+Linux/macOS one-liner:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/obnoxiousmods/obbyconfigs/main/install.sh)" -- --yes --dotfile-mode overwrite --package-mode optional --nano-mode auto
+```
+
+Windows PowerShell helper for Meslo fonts and Tokyo Night:
+
+```powershell
+iwr https://raw.githubusercontent.com/obnoxiousmods/obbyconfigs/main/install.ps1 -OutFile install.ps1
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallFonts -PrintScheme
+```
+
+Windows WSL handoff:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -WslDistro Ubuntu -- --yes --dotfile-mode overwrite --package-mode optional --nano-mode auto
+```
 
 Run from a checkout:
 
@@ -37,13 +56,39 @@ obbyinstaller --help
 
 Required packages:
 
+- Alpine: `bat`, `curl`, `eza`, `fd`, `fzf`, `git`, `nano`, `neovim`, `python3`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
 - Arch: `base-devel`, `bat`, `curl`, `eza`, `fd`, `fzf`, `git`, `neovim`, `python`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
 - Ubuntu/Debian: `bat`, `build-essential`, `curl`, `fd-find`, `fzf`, `git`, `neovim`, `python3`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
+- Fedora/RHEL/Rocky/CentOS: `bat`, `curl`, `eza`, `fd-find`, `fzf`, `git`, `nano`, `neovim`, `python3`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
+- openSUSE/SUSE: `bat`, `curl`, `eza`, `fd`, `fzf`, `git`, `nano`, `neovim`, `python3`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
+- macOS/Homebrew: `bat`, `curl`, `eza`, `fd`, `fzf`, `git`, `nano`, `neovim`, `python`, `ripgrep`, `tmux`, `wget`, `zoxide`, `zsh`
 
 Optional packages with `--package-mode optional` or `--package-mode all`:
 
+- Alpine: `github-cli`, `less`, `nodejs`, `npm`, `py3-pip`, `pipx`, `tree`, `uv`
 - Arch: `github-cli`, `less`, `nano`, `nodejs`, `npm`, `python-pip`, `python-pipx`, `tree`, `uv`
 - Ubuntu/Debian: `gh`, `less`, `nano`, `nodejs`, `npm`, `pipx`, `python3-pip`, `python3-venv`, `tree`
+- Fedora/RHEL/Rocky/CentOS: `gh`, `less`, `nodejs`, `npm`, `pipx`, `python3-pip`, `python3-virtualenv`, `tree`, `uv`
+- openSUSE/SUSE: `gh`, `less`, `nodejs`, `npm`, `python3-pip`, `python3-virtualenv`, `tree`
+- macOS/Homebrew: `gh`, `less`, `node`, `pipx`, `tree`, `uv`
+
+Package groups with `--package-mode all --package-groups dev,python,node,containers,network,fonts` add broader developer, Python, Node, container, networking, and font tools when the current package manager has them. The installer checks installed packages and skips unavailable package names instead of failing the full run.
+
+Supported package managers:
+
+- `pacman` on Arch-style systems.
+- `apt-get` on Ubuntu/Debian-style systems.
+- `dnf` on Fedora/RHEL/Rocky/CentOS-style systems.
+- `zypper` on openSUSE/SUSE-style systems.
+- `apk` on Alpine.
+- `brew` on macOS Intel and Apple Silicon.
+
+Release/package-manager routes:
+
+- GitHub Releases publish wheels, source archives, `obbyinstaller.pyz`, `install.sh`, `install.ps1`, and nFPM-built `.deb`, `.rpm`, `.apk`, and Arch-style package artifacts.
+- GHCR publishes a multi-arch container image for `linux/amd64` and `linux/arm64`: `ghcr.io/obnoxiousmods/obbyconfigs`.
+- The Homebrew formula template is in `packaging/homebrew/obbyconfigs.rb` and supports Intel/ARM Homebrew.
+- Debian, RPM, Arch, and nFPM package recipes live in `packaging/`.
 
 Shell features:
 
@@ -59,8 +104,9 @@ Shell features:
 - zoxide initialization when available
 - uv aliases: `uvr`, `uvs`, `uvx`
 - pyenv, nvm, and bun startup when installed
-- `eza`/`exa` icon aliases for `ls`, `ll`, `la`, and `tree`, with a themed `LS_COLORS` fallback for standard `ls`
+- `eza`/`exa`/`lsd` icon aliases for `ls`, `ll`, `la`, and `tree`, with a themed `LS_COLORS` fallback for standard `ls`
 - Optional nano Dracula UI colors and syntax highlighting setup with built-in nano syntax includes.
+- Expanded tmux hotkeys with multiple Linux/Windows-terminal-friendly bindings. See `docs/TMUX_HOTKEYS.md`.
 
 PATH support:
 
@@ -199,9 +245,13 @@ Path overrides:
 Distro override:
 
 ```bash
+obbyinstaller --assume-distro alpine --list-plan
 obbyinstaller --assume-distro arch --list-plan
 obbyinstaller --assume-distro ubuntu --list-plan
 obbyinstaller --assume-distro debian --list-plan
+obbyinstaller --assume-distro fedora --list-plan
+obbyinstaller --assume-distro opensuse --list-plan
+obbyinstaller --assume-distro macos --list-plan
 ```
 
 Legacy flags still work:
@@ -285,6 +335,35 @@ Ubuntu/Debian:
 sudo apt-get update
 sudo apt-get install -y bat build-essential curl fd-find fzf git neovim python3 ripgrep tmux unzip wget zoxide zsh
 sudo apt-get install -y gh less nano nodejs npm pipx python3-pip python3-venv tree
+```
+
+Fedora/RHEL/Rocky/CentOS:
+
+```bash
+sudo dnf install -y bat curl eza fd-find fzf git nano neovim python3 ripgrep tmux unzip wget zoxide zsh
+sudo dnf install -y gh less nodejs npm pipx python3-pip python3-virtualenv tree uv
+```
+
+openSUSE/SUSE:
+
+```bash
+sudo zypper --non-interactive install bat curl eza fd fzf git nano neovim python3 ripgrep tmux unzip wget zoxide zsh
+sudo zypper --non-interactive install gh less nodejs npm python3-pip python3-virtualenv tree
+```
+
+Alpine:
+
+```bash
+sudo apk update
+sudo apk add bat curl eza fd fzf git nano neovim python3 ripgrep tmux unzip wget zoxide zsh
+sudo apk add github-cli less nodejs npm py3-pip pipx tree uv
+```
+
+macOS:
+
+```bash
+brew install bat curl eza fd fzf git nano neovim python ripgrep tmux wget zoxide zsh
+brew install gh less node pipx tree uv
 ```
 
 Install zsh assets:

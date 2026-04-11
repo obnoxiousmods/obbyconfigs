@@ -1,0 +1,18 @@
+Source: obbyconfigs
+Section: utils
+Priority: optional
+Maintainer: obnoxiousmods
+Standards-Version: 4.7.0
+Build-Depends: debhelper-compat (= 13), dh-python, pybuild-plugin-pyproject, python3-all, python3-hatchling
+Homepage: https://github.com/obnoxiousmods/obbyconfigs
+Rules-Requires-Root: no
+
+Package: obbyconfigs
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, bat, curl, fd-find, fzf, git, nano, python3, ripgrep, tmux, unzip, wget, zoxide, zsh
+Recommends: gh, less, nodejs, npm, pipx, python3-pip, python3-venv, tree
+Suggests: docker.io, fonts-firacode, fonts-noto-color-emoji, fonts-powerline, jq, shellcheck
+Description: Obby's tmux, zsh, nano, and terminal config installer
+ Installs and manages Obby's terminal environment for Debian and Ubuntu:
+ tmux, zsh, Powerlevel10k, zsh plugins, nano syntax highlighting, and
+ related terminal tooling.

@@ -1,7 +1,7 @@
 [project]
 name = "obbyconfigs"
-version = "0.4.1"
-description = "Obby's tmux, zsh, Powerlevel10k, and Tokyo Night installer for Arch, Ubuntu, and Debian."
+version = "0.5.0"
+description = "Obby's tmux, zsh, nano, Powerlevel10k, and Tokyo Night installer for Linux and macOS."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -14,6 +14,7 @@ classifiers = [
   "Environment :: Console",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",

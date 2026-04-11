@@ -330,14 +330,19 @@ fi
 ##### Local convenience #######################################################
 
 if command -v eza >/dev/null 2>&1; then
-  alias ls='eza --icons=auto --group-directories-first'
-  alias ll='eza -lah --icons=auto --group-directories-first --git'
-  alias la='eza -la --icons=auto --group-directories-first --git'
-  alias tree='eza --tree --icons=auto --group-directories-first'
+  alias ls='eza --icons=always --group-directories-first'
+  alias ll='eza -lah --icons=always --group-directories-first --git'
+  alias la='eza -la --icons=always --group-directories-first --git'
+  alias tree='eza --tree --icons=always --group-directories-first'
 elif command -v exa >/dev/null 2>&1; then
   alias ls='exa --icons --group-directories-first'
   alias ll='exa -lah --icons --group-directories-first --git'
   alias la='exa -la --icons --group-directories-first --git'
+elif command -v lsd >/dev/null 2>&1; then
+  alias ls='lsd --icon=always --group-dirs first'
+  alias ll='lsd -lah --icon=always --group-dirs first'
+  alias la='lsd -la --icon=always --group-dirs first'
+  alias tree='lsd --tree --icon=always --group-dirs first'
 else
   alias ls='ls --color=auto'
   alias ll='ls -lah --color=auto'

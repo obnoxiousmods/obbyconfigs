@@ -1,0 +1,50 @@
+name: obbyconfigs
+arch: all
+platform: linux
+version: 0.5.0
+section: utils
+priority: optional
+maintainer: obnoxiousmods
+description: Obby's tmux, zsh, nano, and terminal config installer.
+vendor: obnoxiousmods
+homepage: https://github.com/obnoxiousmods/obbyconfigs
+license: MIT
+
+depends:
+  - python3
+  - git
+  - tmux
+  - zsh
+  - fzf
+  - zoxide
+  - ripgrep
+  - nano
+  - curl
+  - wget
+  - unzip
+
+recommends:
+  - nodejs
+  - npm
+  - pipx
+  - python3-pip
+  - python3-venv
+  - tree
+
+contents:
+  - src: ./dist/obbyinstaller.pyz
+    dst: /usr/bin/obbyinstaller
+    file_info:
+      mode: 0755
+  - src: ./dist/obbyconfigs-0.5.0-py3-none-any.whl
+    dst: /usr/share/obbyconfigs/obbyconfigs-0.5.0-py3-none-any.whl
+  - src: ./install.sh
+    dst: /usr/share/obbyconfigs/install.sh
+    file_info:
+      mode: 0755
+  - src: ./README.md
+    dst: /usr/share/doc/obbyconfigs/README.md
+  - src: ./docs/TMUX_HOTKEYS.md
+    dst: /usr/share/doc/obbyconfigs/TMUX_HOTKEYS.md
+  - src: ./LICENSE
+    dst: /usr/share/licenses/obbyconfigs/LICENSE

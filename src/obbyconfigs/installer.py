@@ -12,18 +12,85 @@ from importlib.resources import files
 from pathlib import Path
 
 APP_NAME = "obbyconfigs"
-SUPPORTED_FAMILIES = {"arch", "debian"}
+SUPPORTED_FAMILIES = {"alpine", "arch", "debian", "fedora", "macos", "suse"}
 SYSTEM_ROOT = Path("/usr/local/share/obbyconfigs")
 SYSTEM_ETC = Path("/etc/obbyconfigs")
+PACKAGE_MANAGERS = {
+    "alpine": ["apk"],
+    "arch": ["pacman"],
+    "debian": ["apt-get"],
+    "fedora": ["dnf", "yum"],
+    "macos": ["brew"],
+    "suse": ["zypper"],
+}
 
 BASE_PACKAGES = {
+    "alpine": ["bat", "curl", "eza", "fd", "fzf", "git", "nano", "neovim", "python3", "ripgrep", "tmux", "unzip", "wget", "zoxide", "zsh"],
     "arch": ["base-devel", "bat", "curl", "eza", "fd", "fzf", "git", "neovim", "python", "ripgrep", "tmux", "unzip", "wget", "zoxide", "zsh"],
     "debian": ["bat", "build-essential", "curl", "fd-find", "fzf", "git", "neovim", "python3", "ripgrep", "tmux", "unzip", "wget", "zoxide", "zsh"],
+    "fedora": ["bat", "curl", "eza", "fd-find", "fzf", "git", "nano", "neovim", "python3", "ripgrep", "tmux", "unzip", "wget", "zoxide", "zsh"],
+    "macos": ["bat", "curl", "eza", "fd", "fzf", "git", "nano", "neovim", "python", "ripgrep", "tmux", "wget", "zoxide", "zsh"],
+    "suse": ["bat", "curl", "eza", "fd", "fzf", "git", "nano", "neovim", "python3", "ripgrep", "tmux", "unzip", "wget", "zoxide", "zsh"],
 }
 
 OPTIONAL_PACKAGES = {
+    "alpine": ["github-cli", "less", "nodejs", "npm", "py3-pip", "pipx", "tree", "uv"],
     "arch": ["github-cli", "less", "nano", "nodejs", "npm", "python-pip", "python-pipx", "tree", "uv"],
     "debian": ["gh", "less", "nano", "nodejs", "npm", "pipx", "python3-pip", "python3-venv", "tree"],
+    "fedora": ["gh", "less", "nodejs", "npm", "pipx", "python3-pip", "python3-virtualenv", "tree", "uv"],
+    "macos": ["gh", "less", "node", "pipx", "tree", "uv"],
+    "suse": ["gh", "less", "nodejs", "npm", "python3-pip", "python3-virtualenv", "tree"],
+}
+
+PACKAGE_GROUPS = {
+    "alpine": {
+        "dev": ["btop", "direnv", "duf", "go", "htop", "jq", "lazygit", "mandoc", "ncdu", "rsync", "shellcheck", "shfmt", "starship", "tealdeer", "tree", "yq"],
+        "python": ["py3-pip", "py3-virtualenv", "python3", "ruff", "uv"],
+        "node": ["nodejs", "npm", "yarn"],
+        "containers": ["docker", "docker-cli-compose"],
+        "network": ["bind-tools", "mtr", "netcat-openbsd", "nmap", "openssh-client", "rsync", "socat", "traceroute", "whois"],
+        "fonts": ["font-noto", "font-noto-emoji"],
+    },
+    "arch": {
+        "dev": ["bat", "btop", "delta", "direnv", "duf", "dust", "github-cli", "glow", "go", "htop", "hyperfine", "jq", "lazygit", "man-db", "ncdu", "rsync", "shellcheck", "shfmt", "starship", "tealdeer", "tree", "yq"],
+        "python": ["python", "python-pip", "python-pipx", "python-virtualenv", "ruff", "uv"],
+        "node": ["nodejs", "npm", "pnpm", "yarn"],
+        "containers": ["docker", "docker-buildx", "docker-compose", "lazydocker"],
+        "network": ["bind", "dog", "inetutils", "mtr", "nmap", "openbsd-netcat", "openssh", "rsync", "socat", "traceroute", "whois"],
+        "fonts": ["noto-fonts", "noto-fonts-cjk", "noto-fonts-emoji", "ttf-firacode-nerd", "ttf-jetbrains-mono-nerd", "ttf-meslo-nerd"],
+    },
+    "debian": {
+        "dev": ["bat", "btop", "direnv", "duf", "fd-find", "glow", "golang-go", "htop", "hyperfine", "jq", "lazygit", "man-db", "ncdu", "rsync", "shellcheck", "shfmt", "tealdeer", "tree", "yq"],
+        "python": ["pipx", "python3", "python3-pip", "python3-venv", "python3-virtualenv", "ruff"],
+        "node": ["nodejs", "npm", "yarnpkg"],
+        "containers": ["docker.io", "docker-buildx", "docker-compose", "docker-compose-plugin"],
+        "network": ["bind9-dnsutils", "dnsutils", "inetutils-ping", "mtr-tiny", "netcat-openbsd", "nmap", "openssh-client", "rsync", "socat", "traceroute", "whois"],
+        "fonts": ["fonts-firacode", "fonts-noto", "fonts-noto-color-emoji", "fonts-powerline"],
+    },
+    "fedora": {
+        "dev": ["btop", "direnv", "duf", "golang", "htop", "hyperfine", "jq", "lazygit", "man-db", "ncdu", "rsync", "ShellCheck", "shfmt", "starship", "tealdeer", "tree", "yq"],
+        "python": ["pipx", "python3", "python3-pip", "python3-virtualenv", "ruff", "uv"],
+        "node": ["nodejs", "npm", "yarnpkg"],
+        "containers": ["docker", "docker-compose", "podman"],
+        "network": ["bind-utils", "mtr", "nmap", "openssh-clients", "rsync", "socat", "traceroute", "whois"],
+        "fonts": ["fira-code-fonts", "google-noto-emoji-color-fonts", "powerline-fonts"],
+    },
+    "macos": {
+        "dev": ["btop", "direnv", "duf", "dust", "gh", "glow", "go", "htop", "hyperfine", "jq", "lazygit", "ncdu", "rsync", "shellcheck", "shfmt", "starship", "tealdeer", "tree", "yq"],
+        "python": ["pipx", "python", "ruff", "uv"],
+        "node": ["node", "pnpm", "yarn"],
+        "containers": ["docker", "docker-compose", "lazydocker"],
+        "network": ["bind", "mtr", "nmap", "openbsd-netcat", "openssh", "rsync", "socat", "whois"],
+        "fonts": ["font-fira-code-nerd-font", "font-jetbrains-mono-nerd-font", "font-meslo-lg-nerd-font", "font-noto-color-emoji"],
+    },
+    "suse": {
+        "dev": ["btop", "direnv", "duf", "go", "htop", "jq", "lazygit", "man", "ncdu", "rsync", "ShellCheck", "shfmt", "starship", "tree", "yq"],
+        "python": ["python3", "python3-pip", "python3-virtualenv"],
+        "node": ["nodejs", "npm"],
+        "containers": ["docker", "docker-compose", "podman"],
+        "network": ["bind-utils", "mtr", "netcat-openbsd", "nmap", "openssh-clients", "rsync", "socat", "traceroute", "whois"],
+        "fonts": ["google-noto-fonts", "google-noto-coloremoji-fonts", "powerline-fonts"],
+    },
 }
 
 OH_MY_ZSH_REPO = "https://github.com/ohmyzsh/ohmyzsh.git"
@@ -147,29 +214,88 @@ def read_os_release() -> dict[str, str]:
 
 def detect_family(override: str | None = None) -> str:
     if override and override != "auto":
-        return "debian" if override in {"ubuntu", "debian"} else override
+        aliases = {"ubuntu": "debian", "rhel": "fedora", "centos": "fedora", "rocky": "fedora", "opensuse": "suse", "darwin": "macos"}
+        return aliases.get(override, override)
+    if platform.system() == "Darwin":
+        return "macos"
     os_release = read_os_release()
     ids = " ".join(value.lower() for value in (os_release.get("ID", ""), os_release.get("ID_LIKE", "")))
+    if "alpine" in ids or shutil.which("apk"):
+        return "alpine"
     if "arch" in ids or shutil.which("pacman"):
         return "arch"
     if any(name in ids for name in ("debian", "ubuntu")) or shutil.which("apt-get"):
         return "debian"
-    raise SystemExit("Unsupported Linux distribution. This installer supports Arch, Ubuntu, and Debian.")
+    if any(name in ids for name in ("fedora", "rhel", "centos", "rocky")) or shutil.which("dnf"):
+        return "fedora"
+    if any(name in ids for name in ("suse", "opensuse")) or shutil.which("zypper"):
+        return "suse"
+    raise SystemExit("Unsupported OS. This installer supports Arch, Ubuntu, Debian, Fedora/RHEL, openSUSE, Alpine, and macOS with Homebrew.")
 
 
 def has_command(command: str) -> bool:
     return shutil.which(command) is not None
 
 
+def package_manager(family: str) -> str | None:
+    for command in PACKAGE_MANAGERS[family]:
+        if has_command(command):
+            return command
+    return None
+
+
+def require_package_manager(family: str) -> str:
+    command = package_manager(family)
+    if command:
+        return command
+    expected = " or ".join(PACKAGE_MANAGERS[family])
+    raise SystemExit(f"Could not find package manager for {family}: expected {expected}. Use --package-mode none to skip package installs.")
+
+
 def has_package(family: str, package: str) -> bool:
+    if family == "alpine":
+        result = subprocess.run(["apk", "info", "-e", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
     if family == "arch":
         result = subprocess.run(["pacman", "-Qq", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "fedora":
+        result = subprocess.run(["rpm", "-q", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "macos":
+        result = subprocess.run(["brew", "list", "--versions", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "suse":
+        result = subprocess.run(["rpm", "-q", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return result.returncode == 0
     result = subprocess.run(["dpkg-query", "-W", "-f=${Status}", package], capture_output=True, text=True)
     return result.returncode == 0 and "install ok installed" in result.stdout
 
 
+def package_available(family: str, package: str) -> bool:
+    if family == "alpine":
+        result = subprocess.run(["apk", "search", "-e", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "arch":
+        result = subprocess.run(["pacman", "-Si", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "fedora":
+        manager = package_manager("fedora") or "dnf"
+        result = subprocess.run([manager, "list", "--available", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "macos":
+        result = subprocess.run(["brew", "info", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    if family == "suse":
+        result = subprocess.run(["zypper", "--non-interactive", "search", "--exact-match", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return result.returncode == 0
+    result = subprocess.run(["apt-cache", "show", package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return result.returncode == 0
+
+
 def sudo_prefix() -> list[str]:
+    if platform.system() == "Darwin":
+        return []
     if os.geteuid() == 0:
         return []
     if not has_command("sudo"):
@@ -184,24 +310,61 @@ def needs_sudo(path: Path) -> bool:
     return normalized in {"/etc", "/usr/local"} or normalized.startswith(("/etc/", "/usr/local/"))
 
 
-def install_packages(runner: Runner, family: str, package_mode: str) -> None:
+def requested_packages(family: str, package_mode: str, package_groups: str) -> list[str]:
     if package_mode == "none":
-        print("Skipping packages by request.")
-        return
+        return []
     packages = list(BASE_PACKAGES[family])
     if package_mode in {"optional", "all", "force"}:
         packages.extend(OPTIONAL_PACKAGES[family])
+    selected_groups = [group.strip() for group in package_groups.split(",") if group.strip()]
+    if package_mode in {"all", "force"} and not selected_groups:
+        selected_groups = sorted(PACKAGE_GROUPS[family])
+    for group in selected_groups:
+        if group not in PACKAGE_GROUPS[family]:
+            known = ", ".join(sorted(PACKAGE_GROUPS[family]))
+            raise SystemExit(f"Unknown package group '{group}'. Known groups: {known}")
+        packages.extend(PACKAGE_GROUPS[family][group])
+    return sorted(set(packages))
+
+
+def install_packages(runner: Runner, family: str, package_mode: str, package_groups: str) -> None:
+    if package_mode == "none":
+        print("Skipping packages by request.")
+        return
+    packages = requested_packages(family, package_mode, package_groups)
+    manager = require_package_manager(family)
     missing = packages if package_mode == "force" else [package for package in packages if not has_package(family, package)]
     if not missing:
         print("All requested packages are already installed.")
         return
 
-    print("Packages to install:", ", ".join(missing))
+    available = [package for package in missing if package_available(family, package)]
+    unavailable = sorted(set(missing) - set(available))
+    if unavailable:
+        print("Skipping unavailable packages:", ", ".join(unavailable))
+    if not available:
+        print("No available missing packages to install.")
+        return
+
+    print("Packages to install:", ", ".join(available))
+    if family == "alpine":
+        runner.run(sudo_prefix() + ["apk", "update"])
+        runner.run(sudo_prefix() + ["apk", "add", *available])
+        return
     if family == "arch":
-        runner.run(sudo_prefix() + ["pacman", "-Syu", "--needed", "--noconfirm", *missing])
+        runner.run(sudo_prefix() + ["pacman", "-Syu", "--needed", "--noconfirm", *available])
+        return
+    if family == "fedora":
+        runner.run(sudo_prefix() + [manager, "install", "-y", *available])
+        return
+    if family == "macos":
+        runner.run(["brew", "install", *available])
+        return
+    if family == "suse":
+        runner.run(sudo_prefix() + ["zypper", "--non-interactive", "install", *available])
         return
     runner.run(sudo_prefix() + ["apt-get", "update"])
-    runner.run(sudo_prefix() + ["apt-get", "install", "-y", *missing])
+    runner.run(sudo_prefix() + ["apt-get", "install", "-y", *available])
 
 
 def backup_path(path: Path) -> Path:
@@ -366,8 +529,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--scope", choices=["user", "system", "all-users"], default="user", help="install for one user or system defaults")
     parser.add_argument("--home", help="home directory for user-scoped config")
     parser.add_argument("--target-user", help="user passed to chsh for system/all-users shell changes")
-    parser.add_argument("--assume-distro", choices=["auto", "arch", "ubuntu", "debian"], default="auto", help="override distro detection")
+    parser.add_argument("--assume-distro", choices=["auto", "alpine", "arch", "centos", "debian", "darwin", "fedora", "macos", "opensuse", "rhel", "rocky", "suse", "ubuntu"], default="auto", help="override distro detection")
     parser.add_argument("--package-mode", choices=["required", "optional", "all", "none", "force"], default="required", help="package install strategy")
+    parser.add_argument("--package-groups", default="", help="comma-separated extra package groups: dev,python,node,containers,network,fonts")
     parser.add_argument("--zsh-mode", choices=["auto", "skip", "force"], default="auto", help="Oh My Zsh install strategy")
     parser.add_argument("--plugin-mode", choices=["auto", "skip", "force"], default="auto", help="zsh plugin install strategy")
     parser.add_argument("--dotfile-mode", choices=["safe", "overwrite", "force"], default="safe", help="dotfile write strategy")
@@ -436,6 +600,7 @@ def print_plan(family: str, paths: InstallPaths, args: argparse.Namespace) -> No
     print(f"scope: {args.scope}")
     print(f"package family: {family}")
     print(f"package mode: {args.package_mode}")
+    print(f"package groups: {args.package_groups or '(default)'}")
     print(f"zsh mode: {args.zsh_mode}")
     print(f"plugin mode: {args.plugin_mode}")
     print(f"dotfile mode: {args.dotfile_mode}")
@@ -456,8 +621,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.print_windows_terminal_scheme:
         print(WINDOWS_TERMINAL_TOKYO_NIGHT)
         return 0
-    if platform.system() != "Linux":
-        raise SystemExit("This installer is for Linux hosts. Use the README for manual Windows Terminal setup.")
+    if platform.system() not in {"Linux", "Darwin"}:
+        raise SystemExit("This installer supports Linux and macOS hosts. Use the README for Windows Terminal and WSL setup.")
 
     family = detect_family(args.assume_distro)
     if family not in SUPPORTED_FAMILIES:
@@ -470,7 +635,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.package_mode != "none":
-        install_packages(runner, family, args.package_mode)
+        install_packages(runner, family, args.package_mode, args.package_groups)
 
     if not args.only_packages and not args.only_nano:
         install_zsh_assets(runner, paths, args.zsh_mode, args.plugin_mode)

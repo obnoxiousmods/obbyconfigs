@@ -1,0 +1,78 @@
+name: Package Check
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+    paths:
+      - "packaging/**"
+      - "install.sh"
+      - "install.ps1"
+      - "scripts/build-pyz.sh"
+      - ".github/workflows/package-check.yml"
+      - ".github/workflows/release.yml"
+      - "pyproject.toml"
+      - "src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Build Python package
+        run: uv build
+
+      - name: Build standalone pyz
+        run: ./scripts/build-pyz.sh
+
+      - name: Smoke pyz
+        run: ./dist/obbyinstaller.pyz --list-plan --skip-packages --skip-shell-change
+
+      - name: Shell syntax
+        run: bash -n install.sh scripts/build-pyz.sh
+
+      - name: Build deb package
+        uses: goreleaser/nfpm-action@v2
+        with:
+          config: packaging/nfpm/nfpm.yaml
+          packager: deb
+          target: dist/
+
+      - name: Build rpm package
+        uses: goreleaser/nfpm-action@v2
+        with:
+          config: packaging/nfpm/nfpm.yaml
+          packager: rpm
+          target: dist/
+
+      - name: Build apk package
+        uses: goreleaser/nfpm-action@v2
+        with:
+          config: packaging/nfpm/nfpm.yaml
+          packager: apk
+          target: dist/
+
+      - name: Build Arch package
+        uses: goreleaser/nfpm-action@v2
+        with:
+          config: packaging/nfpm/nfpm.yaml
+          packager: archlinux
+          target: dist/
+
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: package-check-artifacts
+          path: dist/*
