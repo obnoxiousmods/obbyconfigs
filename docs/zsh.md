@@ -1,5 +1,8 @@
 # Zsh Setup
 
+Full docs: https://obnoxiousmods.github.io/obbyconfigs/
+GitHub Wiki: https://github.com/obnoxiousmods/obbyconfigs/wiki
+
 The zsh template is based on the source machine's Manjaro/Dracula setup.
 
 It includes:

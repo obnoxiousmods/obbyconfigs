@@ -40,6 +40,9 @@ jobs:
       - name: Copy Windows installer
         run: cp install.ps1 dist/install.ps1
 
+      - name: Build platform zip bundles
+        run: ./scripts/build-release-bundles.sh
+
       - name: Build deb package
         run: nfpm package -f packaging/nfpm/nfpm.yaml -p deb -t dist/
 

@@ -44,6 +44,8 @@
         border-radius: 8px;
       }
       a { color: var(--yellow); }
+      nav { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+      nav a { color: var(--yellow); font-weight: 700; }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -63,6 +65,15 @@
         background: var(--panel-2);
         color: var(--muted);
       }
+      .shot {
+        display: block;
+        width: 100%;
+        max-width: 1120px;
+        height: auto;
+        margin: 24px 0 0;
+        border: 1px solid #36364d;
+        border-radius: 8px;
+      }
     </style>
   </head>
   <body>
@@ -70,7 +81,16 @@
       <div class="wrap">
         <h1>obbyconfigs</h1>
         <p>Machine-matching zsh, tmux, nano, Powerlevel10k, fzf, zoxide, icon ls, and package-manager friendly terminal setup for Linux and macOS.</p>
+        <nav aria-label="Project links">
+          <a href="https://github.com/obnoxiousmods/obbyconfigs">GitHub</a>
+          <a href="https://github.com/obnoxiousmods/obbyconfigs/wiki">Wiki</a>
+          <a href="https://github.com/obnoxiousmods/homebrew-obbyconfigs">Homebrew Tap</a>
+          <a href="./install.md">Install</a>
+          <a href="./zsh.md">Zsh</a>
+          <a href="./args.md">Args</a>
+        </nav>
         <pre><code>bash -c "$(curl -fsSL https://raw.githubusercontent.com/obnoxiousmods/obbyconfigs/main/install.sh)" -- --yes --dotfile-mode overwrite --package-mode optional --nano-mode auto</code></pre>
+        <img class="shot" src="./assets/obbyconfigs-tmux-status.png" alt="Obbyconfigs tmux status and zsh theme screenshot">
       </div>
     </header>
 
@@ -95,6 +115,10 @@ obbyinstaller --list-plan</code></pre>
           <div class="card">
             <h3>Release Artifacts</h3>
             <p>Tagged releases publish wheel, source tarball, pyz executable, Linux and Windows install scripts, Linux package artifacts, and multi-arch GHCR images.</p>
+          </div>
+          <div class="card">
+            <h3>Package Registries</h3>
+            <p>PyPI trusted publishing, AUR SSH publishing, and Homebrew tap publishing are wired for release workflows once the external registry settings are configured.</p>
           </div>
         </div>
       </div>

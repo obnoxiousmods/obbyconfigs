@@ -1,0 +1,74 @@
+name: AUR
+
+on:
+  release:
+    types: ["published"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    env:
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    steps:
+      - name: Skip when AUR is not configured
+        if: ${{ env.AUR_SSH_PRIVATE_KEY == '' }}
+        run: echo "AUR_SSH_PRIVATE_KEY is not configured; skipping AUR publish."
+
+      - name: Install tools
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
+        run: pacman -Syu --noconfirm git openssh
+
+      - name: Checkout
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
+        uses: actions/checkout@v6
+
+      - name: Configure SSH
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
+        run: |
+          install -dm700 ~/.ssh
+          printf '%s\n' "${AUR_SSH_PRIVATE_KEY}" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'EOF'
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+            StrictHostKeyChecking yes
+          EOF
+
+      - name: Update PKGBUILD version
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' && startsWith(github.ref_name, 'v') }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^pkgver=.*/pkgver=${version}/" packaging/arch/PKGBUILD
+
+      - name: Generate SRCINFO
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          su builder -c "cd $GITHUB_WORKSPACE/packaging/arch && makepkg --printsrcinfo > .SRCINFO"
+
+      - name: Publish to AUR
+        if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
+        run: |
+          git clone ssh://aur@aur.archlinux.org/obbyconfigs.git aur-upload || {
+            mkdir aur-upload
+            cd aur-upload
+            git init
+            git remote add origin ssh://aur@aur.archlinux.org/obbyconfigs.git
+            cd ..
+          }
+          cp packaging/arch/PKGBUILD aur-upload/
+          cp packaging/arch/.SRCINFO aur-upload/
+          cd aur-upload
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update obbyconfigs"
+          git push -u origin master

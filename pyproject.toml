@@ -27,8 +27,10 @@ dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/obnoxiousmods/obbyconfigs"
+Documentation = "https://obnoxiousmods.github.io/obbyconfigs/"
 Repository = "https://github.com/obnoxiousmods/obbyconfigs"
 Issues = "https://github.com/obnoxiousmods/obbyconfigs/issues"
+Wiki = "https://github.com/obnoxiousmods/obbyconfigs/wiki"
 
 [project.scripts]
 obbyinstaller = "obbyconfigs.installer:main"

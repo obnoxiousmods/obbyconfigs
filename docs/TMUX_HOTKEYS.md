@@ -1,5 +1,8 @@
 # tmux Hotkeys
 
+Full docs: https://obnoxiousmods.github.io/obbyconfigs/
+GitHub Wiki: https://github.com/obnoxiousmods/obbyconfigs/wiki
+
 This config keeps both tmux-style and common terminal-style bindings. `Prefix` means either `Ctrl-a` or `Ctrl-b`.
 
 ## Prefixes

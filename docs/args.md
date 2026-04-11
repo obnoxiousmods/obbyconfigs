@@ -1,5 +1,8 @@
 # CLI Arguments
 
+Full docs: https://obnoxiousmods.github.io/obbyconfigs/
+GitHub Wiki: https://github.com/obnoxiousmods/obbyconfigs/wiki
+
 Run:
 
 ```bash

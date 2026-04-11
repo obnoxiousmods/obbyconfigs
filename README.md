@@ -4,6 +4,12 @@ Obby terminal config installer for Linux and macOS. It installs missing packages
 
 The repo is also a proper `uv` Python package with a CLI named `obbyinstaller`.
 
+Docs: https://obnoxiousmods.github.io/obbyconfigs/
+Wiki: https://github.com/obnoxiousmods/obbyconfigs/wiki
+Homebrew tap: https://github.com/obnoxiousmods/homebrew-obbyconfigs
+
+![Obbyconfigs tmux status and zsh theme screenshot](docs/assets/obbyconfigs-tmux-status.png)
+
 ## Quick install
 
 Linux/macOS one-liner:
@@ -86,9 +92,29 @@ Supported package managers:
 Release/package-manager routes:
 
 - GitHub Releases publish wheels, source archives, `obbyinstaller.pyz`, `install.sh`, `install.ps1`, and nFPM-built `.deb`, `.rpm`, `.apk`, and Arch-style package artifacts.
+- Release zip bundles are built for Linux, macOS, and Windows helpers: `obbyconfigs-linux-any.zip`, `obbyconfigs-macos-any.zip`, and `obbyconfigs-windows-any.zip`.
 - GHCR publishes a multi-arch container image for `linux/amd64` and `linux/arm64`: `ghcr.io/obnoxiousmods/obbyconfigs`.
-- The Homebrew formula template is in `packaging/homebrew/obbyconfigs.rb` and supports Intel/ARM Homebrew.
+- PyPI publishing is wired through trusted publishing in `.github/workflows/pypi.yml` when `ENABLE_PYPI_PUBLISH=true` is configured after PyPI trust setup.
+- AUR publishing is wired through `.github/workflows/aur.yml` and `packaging/arch/PKGBUILD` when `AUR_SSH_PRIVATE_KEY` is configured.
+- Homebrew tap publishing is wired through `.github/workflows/homebrew.yml` and `packaging/homebrew/obbyconfigs.rb` when `HOMEBREW_TAP_REPO` and `HOMEBREW_TAP_TOKEN` are configured.
 - Debian, RPM, Arch, and nFPM package recipes live in `packaging/`.
+
+Install through package ecosystems after the relevant registry publisher is configured:
+
+```bash
+uv tool install obbyconfigs
+pipx install obbyconfigs
+yay -S obbyconfigs
+brew tap obnoxiousmods/obbyconfigs
+brew install obbyconfigs
+```
+
+Registry publisher setup:
+
+- PyPI: create the `obbyconfigs` project/trusted publisher for `obnoxiousmods/obbyconfigs`, workflow `PyPI`, environment `pypi`, then set repo variable `ENABLE_PYPI_PUBLISH=true`.
+- AUR: add an AUR SSH private key as repo secret `AUR_SSH_PRIVATE_KEY`; the workflow publishes `packaging/arch/PKGBUILD` and generated `.SRCINFO`.
+- Homebrew: the tap repo is `obnoxiousmods/homebrew-obbyconfigs`; repo variable `HOMEBREW_TAP_REPO` is set to that repo, and automatic tap pushes need a repo secret `HOMEBREW_TAP_TOKEN` with push access to the tap.
+- GitHub Releases/GHCR: use the built-in `GITHUB_TOKEN`; no extra secret is required for the current repo.
 
 Shell features:
 
@@ -424,6 +450,8 @@ GitHub project files included:
 - CI workflow with uv and Python 3.11, 3.12, and 3.13
 - CodeQL scanning
 - Dependabot for GitHub Actions and uv
+- Release workflow for GitHub Release assets and nFPM packages
+- PyPI, AUR, Homebrew tap, GHCR, and Pages workflows
 - Issue forms
 - Pull request template
 - CODEOWNERS
