@@ -1,0 +1,20 @@
+## Managed by obbyconfigs.
+## Extra obby/Dracula syntax rules for common dotfiles and env-style files.
+
+syntax "obby-env" "(^|/)\.env(\..*)?$|(^|/)\.envrc$|(^|/)\.npmrc$|(^|/)\.python-version$"
+comment "#"
+color brightblack "#.*$"
+color brightmagenta "^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*="
+color brightcyan "\<(true|false|null|yes|no|on|off)\>"
+color brightyellow ""([^"\\]|\\.)*""
+color brightyellow "'([^'\\]|\\.)*'"
+color brightred "\<(TODO|FIXME|HACK|BUG|XXX)\>"
+
+syntax "obby-config" "\.(conf|config|ini|toml|service|timer)$|(^|/)\.gitconfig$|(^|/)tmux\.conf$|(^|/)\.tmux\.conf$"
+comment "#"
+color brightblack "#.*$"
+color brightmagenta "^[[:space:]]*\[.*\]"
+color brightcyan "^[[:space:]]*[A-Za-z0-9_.-]+[[:space:]]*="
+color brightyellow ""([^"\\]|\\.)*""
+color brightgreen "\<(true|false|on|off|yes|no)\>"
+color brightred "\<(TODO|FIXME|HACK|BUG|XXX)\>"

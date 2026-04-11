@@ -1,0 +1,28 @@
+## Managed by obbyconfigs.
+## Dracula-style nano setup that stays close to the zsh/tmux palette.
+
+set autoindent
+set atblanks
+set constantshow
+set indicator
+set linenumbers
+set minibar
+set positionlog
+set stateflags
+set tabsize 2
+set tabstospaces
+set zap
+
+set titlecolor brightwhite,black
+set statuscolor brightwhite,black
+set promptcolor brightmagenta,black
+set selectedcolor black,magenta
+set stripecolor ,black
+set numbercolor cyan,black
+set keycolor magenta,black
+set functioncolor cyan,black
+set scrollercolor magenta,black
+
+include "/usr/share/nano/*.nanorc"
+include "/usr/share/nano/extra/*.nanorc"
+include "__OBBY_NANO_SYNTAX_DIR__/obby-dracula.nanorc"

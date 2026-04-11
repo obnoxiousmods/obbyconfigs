@@ -42,13 +42,13 @@ Required packages:
 
 Optional packages with `--package-mode optional` or `--package-mode all`:
 
-- Arch: `github-cli`, `less`, `nodejs`, `npm`, `python-pip`, `python-pipx`, `tree`, `uv`
-- Ubuntu/Debian: `gh`, `less`, `nodejs`, `npm`, `pipx`, `python3-pip`, `python3-venv`, `tree`
+- Arch: `github-cli`, `less`, `nano`, `nodejs`, `npm`, `python-pip`, `python-pipx`, `tree`, `uv`
+- Ubuntu/Debian: `gh`, `less`, `nano`, `nodejs`, `npm`, `pipx`, `python3-pip`, `python3-venv`, `tree`
 
 Shell features:
 
 - Machine-matching Dracula zsh prompt and tmux status templates.
-- Auto-attach to the newest tmux session when an interactive shell starts outside tmux. Set `NO_AUTO_TMUX=1` to disable it for that shell.
+- Auto-attach to the newest tmux session when an interactive shell starts outside tmux, or create `${OBBY_TMUX_SESSION:-main}` when no session exists. Set `NO_AUTO_TMUX=1` to disable it for that shell.
 - Oh My Zsh
 - Powerlevel10k
 - `zsh-autosuggestions`
@@ -60,6 +60,7 @@ Shell features:
 - uv aliases: `uvr`, `uvs`, `uvx`
 - pyenv, nvm, and bun startup when installed
 - `eza`/`exa` icon aliases for `ls`, `ll`, `la`, and `tree`, with a themed `LS_COLORS` fallback for standard `ls`
+- Optional nano Dracula UI colors and syntax highlighting setup with built-in nano syntax includes.
 
 PATH support:
 
@@ -97,6 +98,8 @@ User scope writes:
 - `~/.oh-my-zsh/custom`
 - `~/.tmux/bin/pane-title`
 - `~/.tmux/bin/pane-context`
+- `~/.nanorc` when `--nano-mode auto` or `--nano-mode force` is used
+- `~/.nano/obby-dracula.nanorc` when `--nano-mode auto` or `--nano-mode force` is used
 
 System/all-users scope:
 
@@ -113,6 +116,8 @@ System scope writes:
 - `/usr/local/share/obbyconfigs/oh-my-zsh/custom`
 - `/usr/local/share/obbyconfigs/tmux/bin/pane-title`
 - `/usr/local/share/obbyconfigs/tmux/bin/pane-context`
+- `/etc/nanorc` when `--nano-mode auto` or `--nano-mode force` is used
+- `/usr/local/share/obbyconfigs/nano/obby-dracula.nanorc` when `--nano-mode auto` or `--nano-mode force` is used
 
 `--system-zsh-hook` makes `/etc/zsh/zshrc` source `/etc/obbyconfigs/zshrc`. Without that flag, the system zsh config is written but not hooked into every user shell.
 
@@ -164,6 +169,13 @@ Shell modes:
 - `--shell-mode skip`: do not change the default shell.
 - `--shell-mode force`: run `chsh` without asking.
 
+Nano modes:
+
+- `--nano-mode skip`: do not write nano config. This is the default.
+- `--nano-mode auto`: write nano config using the selected dotfile mode.
+- `--nano-mode force`: replace nano config regardless of the selected dotfile mode.
+- `--only-nano`: write only nano config and syntax files.
+
 Global force mode:
 
 ```bash
@@ -181,6 +193,8 @@ Path overrides:
 - `--oh-my-zsh PATH`
 - `--zsh-custom PATH`
 - `--tmux-bin PATH`
+- `--nanorc PATH`
+- `--nano-syntax-dir PATH`
 
 Distro override:
 
@@ -262,7 +276,7 @@ Arch Linux:
 
 ```bash
 sudo pacman -Syu --needed base-devel bat curl eza fd fzf git neovim python ripgrep tmux unzip wget zoxide zsh
-sudo pacman -S --needed github-cli less nodejs npm python-pip python-pipx tree uv
+sudo pacman -S --needed github-cli less nano nodejs npm python-pip python-pipx tree uv
 ```
 
 Ubuntu/Debian:
@@ -270,7 +284,7 @@ Ubuntu/Debian:
 ```bash
 sudo apt-get update
 sudo apt-get install -y bat build-essential curl fd-find fzf git neovim python3 ripgrep tmux unzip wget zoxide zsh
-sudo apt-get install -y gh less nodejs npm pipx python3-pip python3-venv tree
+sudo apt-get install -y gh less nano nodejs npm pipx python3-pip python3-venv tree
 ```
 
 Install zsh assets:
@@ -289,6 +303,12 @@ Write only dotfiles from the installer:
 
 ```bash
 obbyinstaller --only-dotfiles --yes --dotfile-mode overwrite
+```
+
+Write only nano config:
+
+```bash
+obbyinstaller --only-nano --yes --dotfile-mode overwrite
 ```
 
 Change your default shell:

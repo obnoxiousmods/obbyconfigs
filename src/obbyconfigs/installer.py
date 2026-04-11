@@ -22,8 +22,8 @@ BASE_PACKAGES = {
 }
 
 OPTIONAL_PACKAGES = {
-    "arch": ["github-cli", "less", "nodejs", "npm", "python-pip", "python-pipx", "tree", "uv"],
-    "debian": ["gh", "less", "nodejs", "npm", "pipx", "python3-pip", "python3-venv", "tree"],
+    "arch": ["github-cli", "less", "nano", "nodejs", "npm", "python-pip", "python-pipx", "tree", "uv"],
+    "debian": ["gh", "less", "nano", "nodejs", "npm", "pipx", "python3-pip", "python3-venv", "tree"],
 }
 
 OH_MY_ZSH_REPO = "https://github.com/ohmyzsh/ohmyzsh.git"
@@ -74,6 +74,8 @@ class InstallPaths:
     oh_my_zsh: Path
     zsh_custom: Path
     tmux_bin: Path
+    nanorc: Path
+    nano_syntax_dir: Path
 
 
 class Runner:
@@ -117,6 +119,16 @@ def tmux_helper_scripts() -> dict[str, str]:
     return {
         "pane-title": read_template("tmux-bin/pane-title"),
         "pane-context": read_template("tmux-bin/pane-context"),
+    }
+
+
+def render_nanorc(paths: InstallPaths) -> str:
+    return read_template("nano/nanorc").replace("__OBBY_NANO_SYNTAX_DIR__", str(paths.nano_syntax_dir))
+
+
+def nano_syntax_files() -> dict[str, str]:
+    return {
+        "obby-dracula.nanorc": read_template("nano/obby-dracula.nanorc"),
     }
 
 
@@ -318,6 +330,8 @@ def resolve_paths(args: argparse.Namespace) -> InstallPaths:
             oh_my_zsh=Path(args.oh_my_zsh or SYSTEM_ROOT / "oh-my-zsh"),
             zsh_custom=Path(args.zsh_custom or SYSTEM_ROOT / "oh-my-zsh" / "custom"),
             tmux_bin=Path(args.tmux_bin or SYSTEM_ROOT / "tmux" / "bin"),
+            nanorc=Path(args.nanorc or "/etc/nanorc"),
+            nano_syntax_dir=Path(args.nano_syntax_dir or SYSTEM_ROOT / "nano"),
         )
     return InstallPaths(
         home=home,
@@ -327,6 +341,8 @@ def resolve_paths(args: argparse.Namespace) -> InstallPaths:
         oh_my_zsh=Path(args.oh_my_zsh or home / ".oh-my-zsh"),
         zsh_custom=Path(args.zsh_custom or home / ".oh-my-zsh" / "custom"),
         tmux_bin=Path(args.tmux_bin or home / ".tmux" / "bin"),
+        nanorc=Path(args.nanorc or home / ".nanorc"),
+        nano_syntax_dir=Path(args.nano_syntax_dir or home / ".nano"),
     )
 
 
@@ -363,9 +379,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--oh-my-zsh", help="custom Oh My Zsh destination")
     parser.add_argument("--zsh-custom", help="custom Oh My Zsh custom directory")
     parser.add_argument("--tmux-bin", help="custom tmux helper script directory")
+    parser.add_argument("--nanorc", help="custom nano config destination")
+    parser.add_argument("--nano-syntax-dir", help="custom nano syntax/theme include directory")
     parser.add_argument("--system-zsh-hook", action="store_true", help="make /etc/zsh/zshrc source /etc/obbyconfigs/zshrc in system scope")
+    parser.add_argument("--nano-mode", choices=["skip", "auto", "force"], default="skip", help="nano config install strategy")
     parser.add_argument("--only-packages", action="store_true", help="only install packages")
     parser.add_argument("--only-dotfiles", action="store_true", help="only write tmux/zsh config files")
+    parser.add_argument("--only-nano", action="store_true", help="only write nano config and syntax files")
     parser.add_argument("--list-plan", action="store_true", help="print the resolved install plan and exit")
     parser.add_argument("--overwrite", action="store_true", help="legacy alias for --dotfile-mode overwrite")
     parser.add_argument("--skip-packages", action="store_true", help="legacy alias for --package-mode none")
@@ -391,16 +411,24 @@ def normalize_args(args: argparse.Namespace) -> argparse.Namespace:
         args.plugin_mode = "force"
         args.dotfile_mode = "force"
         args.shell_mode = "force"
+        args.nano_mode = "force"
     if args.only_packages:
         args.zsh_mode = "skip"
         args.plugin_mode = "skip"
         args.dotfile_mode = "safe"
         args.shell_mode = "skip"
+        args.nano_mode = "skip"
     if args.only_dotfiles:
         args.package_mode = "none"
         args.zsh_mode = "skip"
         args.plugin_mode = "skip"
         args.shell_mode = "skip"
+    if args.only_nano:
+        args.package_mode = "none"
+        args.zsh_mode = "skip"
+        args.plugin_mode = "skip"
+        args.shell_mode = "skip"
+        args.nano_mode = "auto"
     return args
 
 
@@ -418,6 +446,9 @@ def print_plan(family: str, paths: InstallPaths, args: argparse.Namespace) -> No
     print(f"oh-my-zsh: {paths.oh_my_zsh}")
     print(f"zsh custom: {paths.zsh_custom}")
     print(f"tmux helpers: {paths.tmux_bin}")
+    print(f"nano mode: {args.nano_mode}")
+    print(f"nanorc: {paths.nanorc}")
+    print(f"nano syntax: {paths.nano_syntax_dir}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -441,7 +472,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.package_mode != "none":
         install_packages(runner, family, args.package_mode)
 
-    if not args.only_packages:
+    if not args.only_packages and not args.only_nano:
         install_zsh_assets(runner, paths, args.zsh_mode, args.plugin_mode)
         for script_name, script_content in tmux_helper_scripts().items():
             write_file(runner, paths.tmux_bin / script_name, script_content, args.dotfile_mode, not args.no_backup, file_mode="0755")
@@ -450,6 +481,12 @@ def main(argv: list[str] | None = None) -> int:
         write_file(runner, paths.p10k, P10K_ZSH, args.dotfile_mode, not args.no_backup)
         if args.scope in {"system", "all-users"} and args.system_zsh_hook:
             write_system_zsh_hook(runner, args.dotfile_mode, not args.no_backup)
+
+    if not args.only_packages and args.nano_mode != "skip":
+        nano_dotfile_mode = "force" if args.nano_mode == "force" else args.dotfile_mode
+        for file_name, file_content in nano_syntax_files().items():
+            write_file(runner, paths.nano_syntax_dir / file_name, file_content, nano_dotfile_mode, not args.no_backup)
+        write_file(runner, paths.nanorc, render_nanorc(paths), nano_dotfile_mode, not args.no_backup)
 
     set_default_shell(runner, args.shell_mode, args.target_user)
     print_next_steps(args.scope)

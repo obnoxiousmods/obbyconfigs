@@ -44,7 +44,7 @@ export GOPATH="${GOPATH:-$HOME/go}"
 
 [[ $- != *i* ]] && return
 
-if [[ -z "$TMUX" && -z "$NO_AUTO_TMUX" ]] && command -v tmux >/dev/null 2>&1; then
+if [[ -z "$TMUX" && -z "$NO_AUTO_TMUX" && "${TERM:-}" != "dumb" ]] && command -v tmux >/dev/null 2>&1; then
   if tmux has-session 2>/dev/null; then
     _auto_tmux_target="$(
       tmux list-sessions -F '#{?session_attached,1,0} #{session_activity} #{session_name}' \
@@ -52,6 +52,8 @@ if [[ -z "$TMUX" && -z "$NO_AUTO_TMUX" ]] && command -v tmux >/dev/null 2>&1; th
         | awk 'NR == 1 { print $3 }'
     )"
     exec tmux attach -t "$_auto_tmux_target"
+  else
+    exec tmux new-session -s "${OBBY_TMUX_SESSION:-main}"
   fi
 fi
 
