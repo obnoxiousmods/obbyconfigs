@@ -234,6 +234,14 @@ prompt_dracula_identity() {
 
 dracula_p10k
 
+##### Terminal cursor #########################################################
+
+_dracula_cursor() {
+  printf '\e]12;#c4a7e7\a'
+}
+
+precmd_functions+=(_dracula_cursor)
+
 ##### Syntax colors ###########################################################
 
 # Recolor Manjaro's syntax highlighting from bright red/green to the same

@@ -48,6 +48,7 @@ Optional packages with `--package-mode optional` or `--package-mode all`:
 Shell features:
 
 - Machine-matching Dracula zsh prompt and tmux status templates.
+- Auto-attach to the newest tmux session when an interactive shell starts outside tmux. Set `NO_AUTO_TMUX=1` to disable it for that shell.
 - Oh My Zsh
 - Powerlevel10k
 - `zsh-autosuggestions`
