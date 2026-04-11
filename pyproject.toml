@@ -1,0 +1,53 @@
+[project]
+name = "obbyconfigs"
+version = "0.2.0"
+description = "Obby's tmux, zsh, Powerlevel10k, and Tokyo Night installer for Arch, Ubuntu, and Debian."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "obnoxiousmods" }
+]
+keywords = ["tmux", "zsh", "terminal", "powerlevel10k", "tokyo-night", "arch", "ubuntu", "debian"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: System :: Installation/Setup",
+  "Topic :: Terminals",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/obnoxiousmods/obbyconfigs"
+Repository = "https://github.com/obnoxiousmods/obbyconfigs"
+Issues = "https://github.com/obnoxiousmods/obbyconfigs/issues"
+
+[project.scripts]
+obbyinstaller = "obbyconfigs.installer:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+  "ruff>=0.11.0",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

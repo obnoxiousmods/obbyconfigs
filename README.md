@@ -1,42 +1,192 @@
 # obbyconfigs
 
-Obby terminal config installer for Arch Linux, Ubuntu, and Debian. It installs the packages that are missing, sets up tmux, zsh, Oh My Zsh, Powerlevel10k, zsh completions, autosuggestions, syntax highlighting, and a Tokyo Night terminal style.
+Obby terminal config installer for Arch Linux, Ubuntu, and Debian. It installs missing packages, sets up tmux, zsh, Oh My Zsh, Powerlevel10k, zsh completions, autosuggestions, syntax highlighting, zoxide, and a Tokyo Night terminal style.
+
+The repo is also a proper `uv` Python package with a CLI named `obbyinstaller`.
 
 ## Quick install
+
+Run from a checkout:
 
 ```bash
 git clone https://github.com/obnoxiousmods/obbyconfigs.git
 cd obbyconfigs
-python3 obbyinstaller.py --dry-run
-python3 obbyinstaller.py --yes --overwrite --optional-packages
+python3 obbyinstaller.py --list-plan
+python3 obbyinstaller.py --dry-run --yes --dotfile-mode overwrite --package-mode optional --skip-shell-change
+python3 obbyinstaller.py --yes --dotfile-mode overwrite --package-mode optional
 ```
 
-What the installer does:
-
-- Detects Arch, Ubuntu, or Debian from `/etc/os-release` and available package tools.
-- Installs only missing packages.
-- Uses `pacman -Syu --needed --noconfirm` on Arch.
-- Uses `apt-get update` and `apt-get install -y` on Ubuntu/Debian.
-- Installs Oh My Zsh only if `~/.oh-my-zsh` is missing.
-- Clones Powerlevel10k and zsh plugins only if they are missing.
-- Backs up existing `~/.tmux.conf`, `~/.zshrc`, and `~/.p10k.zsh` before replacing them when `--overwrite` is used.
-- Leaves existing dotfiles untouched unless `--overwrite` is used.
-
-## Installer flags
+Run through uv:
 
 ```bash
-python3 obbyinstaller.py --help
+git clone https://github.com/obnoxiousmods/obbyconfigs.git
+cd obbyconfigs
+uv sync --all-groups
+uv run obbyinstaller --list-plan
+uv run obbyinstaller --yes --dotfile-mode overwrite --package-mode optional
 ```
 
-Useful options:
+Install the CLI into your uv tool environment:
 
-- `--dry-run`: preview package installs, clones, and file writes.
-- `--yes` or `-y`: accept installer prompts.
-- `--overwrite`: back up existing dotfiles and write the managed config.
-- `--skip-packages`: do not install Linux packages.
-- `--skip-shell-change`: do not run `chsh`.
-- `--optional-packages`: also install helper packages like `gh`, `less`, and `tree`.
-- `--print-windows-terminal-scheme`: print the Tokyo Night color scheme JSON.
+```bash
+uv tool install .
+obbyinstaller --help
+```
+
+## What It Installs
+
+Required packages:
+
+- Arch: `base-devel`, `bat`, `curl`, `eza`, `fd`, `fzf`, `git`, `neovim`, `python`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
+- Ubuntu/Debian: `bat`, `build-essential`, `curl`, `fd-find`, `fzf`, `git`, `neovim`, `python3`, `ripgrep`, `tmux`, `unzip`, `wget`, `zoxide`, `zsh`
+
+Optional packages with `--package-mode optional` or `--package-mode all`:
+
+- Arch: `github-cli`, `less`, `nodejs`, `npm`, `python-pip`, `python-pipx`, `tree`, `uv`
+- Ubuntu/Debian: `gh`, `less`, `nodejs`, `npm`, `pipx`, `python3-pip`, `python3-venv`, `tree`
+
+Shell features:
+
+- Oh My Zsh
+- Powerlevel10k
+- `zsh-autosuggestions`
+- `zsh-syntax-highlighting`
+- `zsh-completions`
+- fzf key bindings and completions when available
+- zoxide initialization when available
+- uv aliases: `uvr`, `uvs`, `uvx`
+- pyenv, nvm, and bun startup when installed
+
+PATH support:
+
+- `$HOME/.local/bin`
+- `$HOME/bin`
+- `$HOME/.cargo/bin`
+- `$HOME/go/bin`
+- `$HOME/.npm-global/bin`
+- `$HOME/.yarn/bin`
+- `$HOME/.bun/bin`
+- `$HOME/.deno/bin`
+- `$HOME/.pyenv/bin`
+- `$HOME/.rye/shims`
+- `$HOME/.local/share/uv/tools`
+- `$HOME/.local/share/pnpm`
+- `$HOME/.config/yarn/global/node_modules/.bin`
+- `$PWD/node_modules/.bin`
+- `$PWD/.venv/bin`
+- `$PWD/venv/bin`
+
+## Scope Modes
+
+User scope is the default:
+
+```bash
+obbyinstaller --scope user --yes --dotfile-mode overwrite
+```
+
+User scope writes:
+
+- `~/.tmux.conf`
+- `~/.zshrc`
+- `~/.p10k.zsh`
+- `~/.oh-my-zsh`
+- `~/.oh-my-zsh/custom`
+
+System/all-users scope:
+
+```bash
+sudo obbyinstaller --scope system --yes --dotfile-mode overwrite --package-mode optional --system-zsh-hook
+```
+
+System scope writes:
+
+- `/etc/tmux.conf`
+- `/etc/obbyconfigs/zshrc`
+- `/etc/obbyconfigs/p10k.zsh`
+- `/usr/local/share/obbyconfigs/oh-my-zsh`
+- `/usr/local/share/obbyconfigs/oh-my-zsh/custom`
+
+`--system-zsh-hook` makes `/etc/zsh/zshrc` source `/etc/obbyconfigs/zshrc`. Without that flag, the system zsh config is written but not hooked into every user shell.
+
+Use `--target-user USERNAME` when forcing a shell change for another user:
+
+```bash
+sudo obbyinstaller --scope system --target-user obby --shell-mode force
+```
+
+## Mode Flags
+
+Preview first:
+
+```bash
+obbyinstaller --list-plan
+obbyinstaller --dry-run --yes --dotfile-mode overwrite --package-mode optional
+```
+
+Package modes:
+
+- `--package-mode required`: install only required missing packages.
+- `--package-mode optional`: install required packages plus optional developer tools.
+- `--package-mode all`: same as optional, reserved for future expansion.
+- `--package-mode none`: skip package installs.
+- `--package-mode force`: pass all packages to the package manager even if they look installed.
+
+Zsh asset modes:
+
+- `--zsh-mode auto`: clone Oh My Zsh only when missing.
+- `--zsh-mode skip`: do not install Oh My Zsh.
+- `--zsh-mode force`: move the existing Oh My Zsh path to a backup name and clone again.
+
+Plugin modes:
+
+- `--plugin-mode auto`: clone missing plugins only.
+- `--plugin-mode skip`: do not install plugins.
+- `--plugin-mode force`: move existing plugin paths to backup names and clone again.
+
+Dotfile modes:
+
+- `--dotfile-mode safe`: do not overwrite existing config files.
+- `--dotfile-mode overwrite`: back up existing config files and replace them.
+- `--dotfile-mode force`: same write behavior as overwrite, intended for full forced runs.
+- `--no-backup`: replace without saving `.backup-YYYYMMDD-HHMMSS` files.
+
+Shell modes:
+
+- `--shell-mode ask`: ask before running `chsh`.
+- `--shell-mode skip`: do not change the default shell.
+- `--shell-mode force`: run `chsh` without asking.
+
+Global force mode:
+
+```bash
+obbyinstaller --force --yes
+```
+
+`--force` sets package, zsh, plugin, dotfile, and shell modes to force.
+
+Path overrides:
+
+- `--home PATH`
+- `--tmux-conf PATH`
+- `--zshrc PATH`
+- `--p10k PATH`
+- `--oh-my-zsh PATH`
+- `--zsh-custom PATH`
+
+Distro override:
+
+```bash
+obbyinstaller --assume-distro arch --list-plan
+obbyinstaller --assume-distro ubuntu --list-plan
+obbyinstaller --assume-distro debian --list-plan
+```
+
+Legacy flags still work:
+
+- `--overwrite`
+- `--skip-packages`
+- `--skip-shell-change`
+- `--optional-packages`
 
 ## Windows Terminal: Meslo, Powerline, OS Icons, Tokyo Night
 
@@ -91,38 +241,33 @@ Install Meslo with Nerd Font symbols. Powerlevel10k expects a MesloLGS Nerd Font
 
 9. Save the settings file and restart Windows Terminal.
 
-You can also print the scheme from the installer:
+Print the scheme from the installer:
 
 ```bash
-python3 obbyinstaller.py --print-windows-terminal-scheme
+obbyinstaller --print-windows-terminal-scheme
 ```
 
-## Manual install guide
-
-Install packages.
+## Manual Install Guide
 
 Arch Linux:
 
 ```bash
-sudo pacman -Syu --needed base-devel bat curl eza fd fzf git neovim ripgrep tmux unzip wget zoxide zsh
+sudo pacman -Syu --needed base-devel bat curl eza fd fzf git neovim python ripgrep tmux unzip wget zoxide zsh
+sudo pacman -S --needed github-cli less nodejs npm python-pip python-pipx tree uv
 ```
 
 Ubuntu/Debian:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y bat build-essential curl fd-find fzf git neovim ripgrep tmux unzip wget zoxide zsh
+sudo apt-get install -y bat build-essential curl fd-find fzf git neovim python3 ripgrep tmux unzip wget zoxide zsh
+sudo apt-get install -y gh less nodejs npm pipx python3-pip python3-venv tree
 ```
 
-Install Oh My Zsh:
+Install zsh assets:
 
 ```bash
-RUNZSH=no CHSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-```
-
-Install the zsh theme and plugins:
-
-```bash
+git clone --depth=1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
 ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
 git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
@@ -130,10 +275,10 @@ git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$Z
 git clone --depth=1 https://github.com/zsh-users/zsh-completions.git "$ZSH_CUSTOM/plugins/zsh-completions"
 ```
 
-Run the installer only for dotfiles if you installed packages manually:
+Write only dotfiles from the installer:
 
 ```bash
-python3 obbyinstaller.py --skip-packages --yes --overwrite
+obbyinstaller --only-dotfiles --yes --dotfile-mode overwrite
 ```
 
 Change your default shell:
@@ -154,6 +299,29 @@ Reload tmux after editing:
 tmux source-file ~/.tmux.conf
 ```
 
+## Project Development
+
+Use uv:
+
+```bash
+uv sync --all-groups
+uv run ruff check .
+uv run python -m compileall obbyinstaller.py src
+uv run obbyinstaller --list-plan --skip-packages --skip-shell-change
+```
+
+GitHub project files included:
+
+- CI workflow with uv and Python 3.11, 3.12, and 3.13
+- CodeQL scanning
+- Dependabot for GitHub Actions and uv
+- Issue forms
+- Pull request template
+- CODEOWNERS
+- Copilot instructions
+- Security policy
+- Contribution guide
+
 ## Safety
 
-Run `--dry-run` first. The installer avoids reinstalling packages and does not overwrite existing dotfiles unless `--overwrite` is present. Replaced dotfiles are saved next to the original path with a `.backup-YYYYMMDD-HHMMSS` suffix.
+Run `--dry-run` and `--list-plan` first. The installer avoids reinstalling packages and does not overwrite existing dotfiles unless `--dotfile-mode overwrite`, `--dotfile-mode force`, or `--force` is present. Replaced dotfiles are saved next to the original path with a `.backup-YYYYMMDD-HHMMSS` suffix unless `--no-backup` is used.
