@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 
 APP_NAME = "obbyconfigs"
@@ -31,62 +32,12 @@ ZSH_GIT_REPOS = {
     "plugins/zsh-autosuggestions": "https://github.com/zsh-users/zsh-autosuggestions.git",
     "plugins/zsh-syntax-highlighting": "https://github.com/zsh-users/zsh-syntax-highlighting.git",
     "plugins/zsh-completions": "https://github.com/zsh-users/zsh-completions.git",
+    "plugins/zsh-history-substring-search": "https://github.com/zsh-users/zsh-history-substring-search.git",
 }
 
-TMUX_CONF = r"""# Managed by obbyconfigs.
-set -g default-terminal "tmux-256color"
-set -ag terminal-overrides ",xterm-256color:RGB"
-set -g mouse on
-set -g history-limit 50000
-set -g escape-time 10
-set -g focus-events on
-set -g renumber-windows on
-set -g base-index 1
-setw -g pane-base-index 1
-
-unbind C-b
-set -g prefix C-a
-bind C-a send-prefix
-
-bind r source-file ~/.tmux.conf \; display-message "tmux config reloaded"
-bind | split-window -h -c "#{pane_current_path}"
-bind - split-window -v -c "#{pane_current_path}"
-bind c new-window -c "#{pane_current_path}"
-bind h select-pane -L
-bind j select-pane -D
-bind k select-pane -U
-bind l select-pane -R
-
-set -g status on
-set -g status-interval 5
-set -g status-position bottom
-set -g status-style "bg=#1a1b26,fg=#c0caf5"
-set -g status-left-length 60
-set -g status-right-length 120
-set -g status-left "#[bg=#7aa2f7,fg=#1a1b26,bold] #S #[bg=#24283b,fg=#7aa2f7]"
-set -g status-right "#[fg=#414868]#[bg=#414868,fg=#c0caf5] %Y-%m-%d #[fg=#7dcfff] #[fg=#c0caf5]%H:%M "
-setw -g window-status-format "#[fg=#565f89] #I:#W "
-setw -g window-status-current-format "#[bg=#bb9af7,fg=#1a1b26,bold] #I:#W "
-setw -g pane-border-style "fg=#414868"
-setw -g pane-active-border-style "fg=#7aa2f7"
-set -g message-style "bg=#7aa2f7,fg=#1a1b26"
-"""
-
-P10K_ZSH = r"""# Minimal Powerlevel10k config managed by obbyconfigs.
-typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
-typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(os_icon dir vcs)
-typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status command_execution_time background_jobs time)
-typeset -g POWERLEVEL9K_MODE=nerdfont-complete
-typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
-typeset -g POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=''
-typeset -g POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX='%F{blue}❯%f '
-typeset -g POWERLEVEL9K_DIR_FOREGROUND=254
-typeset -g POWERLEVEL9K_DIR_BACKGROUND=024
-typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=254
-typeset -g POWERLEVEL9K_VCS_CLEAN_BACKGROUND=029
-typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=254
-typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=166
-typeset -g POWERLEVEL9K_TIME_FORMAT='%D{%H:%M}'
+P10K_ZSH = r"""# Managed by obbyconfigs.
+# This setup keeps the Powerlevel10k theme configuration inline in ~/.zshrc
+# to match the source machine's Manjaro/Dracula prompt behavior.
 """
 
 WINDOWS_TERMINAL_TOKYO_NIGHT = r"""{
@@ -122,6 +73,7 @@ class InstallPaths:
     p10k: Path
     oh_my_zsh: Path
     zsh_custom: Path
+    tmux_bin: Path
 
 
 class Runner:
@@ -144,104 +96,28 @@ class Runner:
         return answer in {"y", "yes"}
 
 
-def zshrc_template(oh_my_zsh: Path, p10k: Path) -> str:
-    return f"""# Managed by obbyconfigs.
-export ZSH="{oh_my_zsh}"
-export EDITOR="${{EDITOR:-nvim}}"
-export VISUAL="${{VISUAL:-$EDITOR}}"
-export LANG="${{LANG:-en_US.UTF-8}}"
+def read_template(relative_path: str) -> str:
+    return files("obbyconfigs").joinpath("templates", relative_path).read_text(encoding="utf-8")
 
-ZSH_THEME="powerlevel10k/powerlevel10k"
 
-plugins=(
-  git
-  sudo
-  command-not-found
-  colored-man-pages
-  history-substring-search
-  zsh-autosuggestions
-  zsh-syntax-highlighting
-  zsh-completions
-)
+def render_zshrc(paths: InstallPaths) -> str:
+    p10k_theme = paths.zsh_custom / "themes" / "powerlevel10k" / "powerlevel10k.zsh-theme"
+    return (
+        read_template("zshrc.zsh")
+        .replace("__OBBY_ZSH_CUSTOM__", str(paths.zsh_custom))
+        .replace("__OBBY_P10K_THEME__", str(p10k_theme))
+    )
 
-[[ -r "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
-[[ -r "{p10k}" ]] && source "{p10k}"
 
-HISTFILE="$HOME/.zsh_history"
-HISTSIZE=50000
-SAVEHIST=50000
-setopt appendhistory sharehistory hist_ignore_all_dups hist_reduce_blanks
-setopt autocd correct interactivecomments
+def render_tmux_conf(paths: InstallPaths) -> str:
+    return read_template("tmux.conf").replace("__OBBY_TMUX_BIN__", str(paths.tmux_bin))
 
-obby_path_prepend() {{
-  [[ -n "$1" && -d "$1" && ":$PATH:" != *":$1:"* ]] && export PATH="$1:$PATH"
-}}
 
-obby_path_prepend "$HOME/.local/bin"
-obby_path_prepend "$HOME/bin"
-obby_path_prepend "$HOME/.cargo/bin"
-obby_path_prepend "$HOME/go/bin"
-obby_path_prepend "$HOME/.npm-global/bin"
-obby_path_prepend "$HOME/.yarn/bin"
-obby_path_prepend "$HOME/.bun/bin"
-obby_path_prepend "$HOME/.deno/bin"
-obby_path_prepend "$HOME/.pyenv/bin"
-obby_path_prepend "$HOME/.rye/shims"
-obby_path_prepend "$HOME/.local/share/uv/tools"
-obby_path_prepend "$HOME/.local/share/pnpm"
-obby_path_prepend "$HOME/.config/yarn/global/node_modules/.bin"
-obby_path_prepend "$PWD/node_modules/.bin"
-[[ -d ".venv/bin" ]] && obby_path_prepend "$PWD/.venv/bin"
-[[ -d "venv/bin" ]] && obby_path_prepend "$PWD/venv/bin"
-
-export PNPM_HOME="${{PNPM_HOME:-$HOME/.local/share/pnpm}}"
-export BUN_INSTALL="${{BUN_INSTALL:-$HOME/.bun}}"
-export GOPATH="${{GOPATH:-$HOME/go}}"
-
-alias ll='ls -lah --color=auto'
-alias grep='grep --color=auto'
-alias tmux='tmux -2'
-alias vim='nvim'
-
-if command -v eza >/dev/null 2>&1; then
-  alias ls='eza --icons=auto --group-directories-first'
-  alias la='eza -la --icons=auto --group-directories-first'
-  alias tree='eza --tree --icons=auto'
-elif command -v exa >/dev/null 2>&1; then
-  alias ls='exa --icons --group-directories-first'
-fi
-
-if command -v batcat >/dev/null 2>&1; then
-  alias bat='batcat'
-fi
-
-if command -v fzf >/dev/null 2>&1; then
-  source /usr/share/fzf/key-bindings.zsh 2>/dev/null || true
-  source /usr/share/fzf/completion.zsh 2>/dev/null || true
-fi
-
-if command -v zoxide >/dev/null 2>&1; then
-  eval "$(zoxide init zsh)"
-fi
-
-if command -v uv >/dev/null 2>&1; then
-  alias uvr='uv run'
-  alias uvs='uv sync'
-  alias uvx='uv tool run'
-fi
-
-if command -v pyenv >/dev/null 2>&1; then
-  eval "$(pyenv init - zsh)"
-fi
-
-if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
-  source "$HOME/.nvm/nvm.sh"
-fi
-
-if [[ -s "$BUN_INSTALL/_bun" ]]; then
-  source "$BUN_INSTALL/_bun"
-fi
-"""
+def tmux_helper_scripts() -> dict[str, str]:
+    return {
+        "pane-title": read_template("tmux-bin/pane-title"),
+        "pane-context": read_template("tmux-bin/pane-context"),
+    }
 
 
 def read_os_release() -> dict[str, str]:
@@ -333,7 +209,7 @@ def ensure_parent(runner: Runner, path: Path) -> None:
         parent.mkdir(parents=True, exist_ok=True)
 
 
-def write_file(runner: Runner, path: Path, content: str, mode: str, backup: bool) -> None:
+def write_file(runner: Runner, path: Path, content: str, mode: str, backup: bool, file_mode: str = "0644") -> None:
     path = path.expanduser()
     next_content = content.rstrip() + "\n"
     if path.exists():
@@ -363,11 +239,12 @@ def write_file(runner: Runner, path: Path, content: str, mode: str, backup: bool
             tmp.write(next_content)
             tmp_path = tmp.name
         try:
-            runner.run(sudo_prefix() + ["install", "-m", "0644", tmp_path, str(path)])
+            runner.run(sudo_prefix() + ["install", "-m", file_mode, tmp_path, str(path)])
         finally:
             Path(tmp_path).unlink(missing_ok=True)
     else:
         path.write_text(next_content, encoding="utf-8")
+        path.chmod(int(file_mode, 8))
     print(f"Wrote {path}")
 
 
@@ -440,6 +317,7 @@ def resolve_paths(args: argparse.Namespace) -> InstallPaths:
             p10k=Path(args.p10k or SYSTEM_ETC / "p10k.zsh"),
             oh_my_zsh=Path(args.oh_my_zsh or SYSTEM_ROOT / "oh-my-zsh"),
             zsh_custom=Path(args.zsh_custom or SYSTEM_ROOT / "oh-my-zsh" / "custom"),
+            tmux_bin=Path(args.tmux_bin or SYSTEM_ROOT / "tmux" / "bin"),
         )
     return InstallPaths(
         home=home,
@@ -448,6 +326,7 @@ def resolve_paths(args: argparse.Namespace) -> InstallPaths:
         p10k=Path(args.p10k or home / ".p10k.zsh"),
         oh_my_zsh=Path(args.oh_my_zsh or home / ".oh-my-zsh"),
         zsh_custom=Path(args.zsh_custom or home / ".oh-my-zsh" / "custom"),
+        tmux_bin=Path(args.tmux_bin or home / ".tmux" / "bin"),
     )
 
 
@@ -483,6 +362,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--p10k", help="custom Powerlevel10k config destination")
     parser.add_argument("--oh-my-zsh", help="custom Oh My Zsh destination")
     parser.add_argument("--zsh-custom", help="custom Oh My Zsh custom directory")
+    parser.add_argument("--tmux-bin", help="custom tmux helper script directory")
     parser.add_argument("--system-zsh-hook", action="store_true", help="make /etc/zsh/zshrc source /etc/obbyconfigs/zshrc in system scope")
     parser.add_argument("--only-packages", action="store_true", help="only install packages")
     parser.add_argument("--only-dotfiles", action="store_true", help="only write tmux/zsh config files")
@@ -537,6 +417,7 @@ def print_plan(family: str, paths: InstallPaths, args: argparse.Namespace) -> No
     print(f"p10k: {paths.p10k}")
     print(f"oh-my-zsh: {paths.oh_my_zsh}")
     print(f"zsh custom: {paths.zsh_custom}")
+    print(f"tmux helpers: {paths.tmux_bin}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -562,8 +443,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.only_packages:
         install_zsh_assets(runner, paths, args.zsh_mode, args.plugin_mode)
-        write_file(runner, paths.tmux_conf, TMUX_CONF, args.dotfile_mode, not args.no_backup)
-        write_file(runner, paths.zshrc, zshrc_template(paths.oh_my_zsh, paths.p10k), args.dotfile_mode, not args.no_backup)
+        for script_name, script_content in tmux_helper_scripts().items():
+            write_file(runner, paths.tmux_bin / script_name, script_content, args.dotfile_mode, not args.no_backup, file_mode="0755")
+        write_file(runner, paths.tmux_conf, render_tmux_conf(paths), args.dotfile_mode, not args.no_backup)
+        write_file(runner, paths.zshrc, render_zshrc(paths), args.dotfile_mode, not args.no_backup)
         write_file(runner, paths.p10k, P10K_ZSH, args.dotfile_mode, not args.no_backup)
         if args.scope in {"system", "all-users"} and args.system_zsh_hook:
             write_system_zsh_hook(runner, args.dotfile_mode, not args.no_backup)

@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tty_path="${1:-}"
+fallback_user="${2:-$(id -un 2>/dev/null || printf user)}"
+fallback_host="${3:-$(hostname -s 2>/dev/null || hostname 2>/dev/null || printf host)}"
+
+tty_name="${tty_path#/dev/}"
+proc_user=""
+comm=""
+args=""
+
+if [[ -n "$tty_name" && "$tty_name" != "$tty_path" ]]; then
+  line="$(
+    ps -t "$tty_name" -o user=,stat=,comm=,args= 2>/dev/null |
+      awk '
+        $2 ~ /\+/ { current = $0 }
+        END {
+          if (current != "") {
+            print current
+          }
+        }
+      '
+  )" || true
+
+  if [[ -n "$line" ]]; then
+    read -r proc_user _stat comm args <<<"$line"
+  fi
+fi
+
+user="${proc_user:-$fallback_user}"
+host="$fallback_host"
+label="${user}@${host}"
+
+if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
+  label="${label} wsl:${WSL_DISTRO_NAME}"
+elif grep -qi microsoft /proc/version 2>/dev/null; then
+  label="${label} wsl"
+fi
+
+case "$comm" in
+  ssh|mosh)
+    target=""
+    for word in $args; do
+      case "$word" in
+        ssh|mosh|-*|*=*) ;;
+        *@*) target="$word" ;;
+        *)
+          if [[ -z "$target" && "$word" != */* ]]; then
+            target="$word"
+          fi
+          ;;
+      esac
+    done
+    [[ -n "$target" ]] && label="ssh:${target}"
+    ;;
+  sudo)
+    label="sudo ${label}"
+    ;;
+esac
+
+printf '%s\n' "$label"

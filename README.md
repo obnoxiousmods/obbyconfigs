@@ -1,6 +1,6 @@
 # obbyconfigs
 
-Obby terminal config installer for Arch Linux, Ubuntu, and Debian. It installs missing packages, sets up tmux, zsh, Oh My Zsh, Powerlevel10k, zsh completions, autosuggestions, syntax highlighting, zoxide, and a Tokyo Night terminal style.
+Obby terminal config installer for Arch Linux, Ubuntu, and Debian. It installs missing packages and applies the same tmux + zsh setup used on this machine: Manjaro/Dracula-style Powerlevel10k prompt, tmux powerline status, autosuggestions, syntax highlighting, history substring search, fzf hotkeys, zoxide, icon-aware `ls`, and a Tokyo Night Windows Terminal scheme.
 
 The repo is also a proper `uv` Python package with a CLI named `obbyinstaller`.
 
@@ -47,15 +47,18 @@ Optional packages with `--package-mode optional` or `--package-mode all`:
 
 Shell features:
 
+- Machine-matching Dracula zsh prompt and tmux status templates.
 - Oh My Zsh
 - Powerlevel10k
 - `zsh-autosuggestions`
 - `zsh-syntax-highlighting`
 - `zsh-completions`
+- `zsh-history-substring-search`
 - fzf key bindings and completions when available
 - zoxide initialization when available
 - uv aliases: `uvr`, `uvs`, `uvx`
 - pyenv, nvm, and bun startup when installed
+- `eza`/`exa` icon aliases for `ls`, `ll`, `la`, and `tree`, with a themed `LS_COLORS` fallback for standard `ls`
 
 PATH support:
 
@@ -91,6 +94,8 @@ User scope writes:
 - `~/.p10k.zsh`
 - `~/.oh-my-zsh`
 - `~/.oh-my-zsh/custom`
+- `~/.tmux/bin/pane-title`
+- `~/.tmux/bin/pane-context`
 
 System/all-users scope:
 
@@ -105,6 +110,8 @@ System scope writes:
 - `/etc/obbyconfigs/p10k.zsh`
 - `/usr/local/share/obbyconfigs/oh-my-zsh`
 - `/usr/local/share/obbyconfigs/oh-my-zsh/custom`
+- `/usr/local/share/obbyconfigs/tmux/bin/pane-title`
+- `/usr/local/share/obbyconfigs/tmux/bin/pane-context`
 
 `--system-zsh-hook` makes `/etc/zsh/zshrc` source `/etc/obbyconfigs/zshrc`. Without that flag, the system zsh config is written but not hooked into every user shell.
 
@@ -172,6 +179,7 @@ Path overrides:
 - `--p10k PATH`
 - `--oh-my-zsh PATH`
 - `--zsh-custom PATH`
+- `--tmux-bin PATH`
 
 Distro override:
 
@@ -273,6 +281,7 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/th
 git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
 git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
 git clone --depth=1 https://github.com/zsh-users/zsh-completions.git "$ZSH_CUSTOM/plugins/zsh-completions"
+git clone --depth=1 https://github.com/zsh-users/zsh-history-substring-search.git "$ZSH_CUSTOM/plugins/zsh-history-substring-search"
 ```
 
 Write only dotfiles from the installer:

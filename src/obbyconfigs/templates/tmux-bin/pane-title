@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+tty_path="${1:-}"
+fallback="${2:-shell}"
+
+tty_name="${tty_path#/dev/}"
+if [[ -z "$tty_name" || "$tty_name" == "$tty_path" ]]; then
+  printf '%s\n' "$fallback"
+  exit 0
+fi
+
+line="$(
+  ps -t "$tty_name" -o pid=,ppid=,stat=,comm=,args= 2>/dev/null |
+    awk '
+      $3 ~ /\+/ { current = $0 }
+      END {
+        if (current != "") {
+          print current
+        }
+      }
+    '
+)" || true
+
+if [[ -z "$line" ]]; then
+  printf '%s\n' "$fallback"
+  exit 0
+fi
+
+# ps fields: pid ppid stat comm args...
+read -r _pid _ppid _stat comm args <<<"$line"
+args="${args:-$comm}"
+
+case "$comm" in
+  node|nodejs|bun|deno)
+    if [[ "$args" =~ (^|[[:space:]/])codex($|[[:space:]]) ]]; then
+      printf 'codex\n'
+    elif [[ "$args" =~ (^|[[:space:]/])claude($|[[:space:]]) ]]; then
+      printf 'claude\n'
+    elif [[ "$args" =~ (^|[[:space:]/])vite($|[[:space:]]) ]]; then
+      printf 'vite\n'
+    elif [[ "$args" =~ (^|[[:space:]/])next($|[[:space:]]) ]]; then
+      printf 'next\n'
+    elif [[ "$args" =~ (^|[[:space:]/])astro($|[[:space:]]) ]]; then
+      printf 'astro\n'
+    elif [[ "$args" =~ (^|[[:space:]/])tsx($|[[:space:]]) ]]; then
+      printf 'tsx\n'
+    elif [[ "$args" =~ (^|[[:space:]/])ts-node($|[[:space:]]) ]]; then
+      printf 'ts-node\n'
+    else
+      printf '%s\n' "$comm"
+    fi
+    ;;
+  python|python3)
+    if [[ "$args" =~ (^|[[:space:]/])uvicorn($|[[:space:]]) ]]; then
+      printf 'uvicorn\n'
+    elif [[ "$args" =~ (^|[[:space:]/])gunicorn($|[[:space:]]) ]]; then
+      printf 'gunicorn\n'
+    elif [[ "$args" =~ (^|[[:space:]/])pytest($|[[:space:]]) ]]; then
+      printf 'pytest\n'
+    elif [[ "$args" =~ (^|[[:space:]/])django-admin($|[[:space:]]) ]]; then
+      printf 'django\n'
+    else
+      printf '%s\n' "$comm"
+    fi
+    ;;
+  sh|bash|zsh|fish)
+    printf '%s\n' "$fallback"
+    ;;
+  *)
+    printf '%s\n' "$comm"
+    ;;
+esac
