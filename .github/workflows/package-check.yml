@@ -43,33 +43,25 @@ jobs:
       - name: Shell syntax
         run: bash -n install.sh scripts/build-pyz.sh
 
-      - name: Build deb package
-        uses: goreleaser/nfpm-action@v2
+      - name: Set up Go for nFPM
+        uses: actions/setup-go@v6
         with:
-          config: packaging/nfpm/nfpm.yaml
-          packager: deb
-          target: dist/
+          go-version: stable
+
+      - name: Install nFPM
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.4
+
+      - name: Build deb package
+        run: nfpm package -f packaging/nfpm/nfpm.yaml -p deb -t dist/
 
       - name: Build rpm package
-        uses: goreleaser/nfpm-action@v2
-        with:
-          config: packaging/nfpm/nfpm.yaml
-          packager: rpm
-          target: dist/
+        run: nfpm package -f packaging/nfpm/nfpm.yaml -p rpm -t dist/
 
       - name: Build apk package
-        uses: goreleaser/nfpm-action@v2
-        with:
-          config: packaging/nfpm/nfpm.yaml
-          packager: apk
-          target: dist/
+        run: nfpm package -f packaging/nfpm/nfpm.yaml -p apk -t dist/
 
       - name: Build Arch package
-        uses: goreleaser/nfpm-action@v2
-        with:
-          config: packaging/nfpm/nfpm.yaml
-          packager: archlinux
-          target: dist/
+        run: nfpm package -f packaging/nfpm/nfpm.yaml -p archlinux -t dist/
 
       - name: Upload package artifacts
         uses: actions/upload-artifact@v5
