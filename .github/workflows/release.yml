@@ -56,7 +56,7 @@ jobs:
         run: nfpm package -f packaging/nfpm/nfpm.yaml -p archlinux -t dist/
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: release-artifacts
           path: |
