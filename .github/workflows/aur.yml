@@ -25,7 +25,7 @@ jobs:
 
       - name: Checkout
         if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configure SSH
         if: ${{ env.AUR_SSH_PRIVATE_KEY != '' }}

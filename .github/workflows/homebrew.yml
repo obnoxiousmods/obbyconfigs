@@ -21,7 +21,7 @@ jobs:
 
       - name: Checkout
         if: ${{ env.HOMEBREW_TAP_TOKEN != '' && env.HOMEBREW_TAP_REPO != '' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Prepare formula
         if: ${{ env.HOMEBREW_TAP_TOKEN != '' && env.HOMEBREW_TAP_REPO != '' && startsWith(github.ref_name, 'v') }}
