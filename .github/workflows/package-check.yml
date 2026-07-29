@@ -41,7 +41,7 @@ jobs:
         run: ./dist/obbyinstaller.pyz --list-plan --skip-packages --skip-shell-change
 
       - name: Shell syntax
-        run: bash -n install.sh scripts/build-pyz.sh scripts/build-release-bundles.sh
+        run: bash -n install.sh scripts/build-pyz.sh scripts/build-release-bundles.sh src/obbyconfigs/templates/tmux-bin/*
 
       - name: Build platform zip bundles
         run: ./scripts/build-release-bundles.sh

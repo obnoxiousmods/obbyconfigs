@@ -1,5 +1,5 @@
 Name:           obbyconfigs
-Version:        0.5.0
+Version:        0.5.1
 Release:        1%{?dist}
 Summary:        Obby's tmux, zsh, nano, and terminal config installer
 License:        MIT
@@ -48,5 +48,8 @@ install -Dm644 LICENSE %{buildroot}%{_licensedir}/obbyconfigs/LICENSE
 %{_datadir}/obbyconfigs/install.sh
 
 %changelog
+* Wed Jul 29 2026 obnoxiousmods <noreply@github.com> - 0.5.1-1
+- Reliably detect Codex, Claude, and Kimi in tmux pane titles.
+
 * Sat Apr 11 2026 obnoxiousmods <noreply@github.com> - 0.5.0-1
 - Initial RPM packaging.

@@ -1,6 +1,6 @@
 [project]
 name = "obbyconfigs"
-version = "0.5.0"
+version = "0.5.1"
 description = "Obby's tmux, zsh, nano, Powerlevel10k, and Tokyo Night installer for Linux and macOS."
 readme = "README.md"
 requires-python = ">=3.11"
