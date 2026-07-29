@@ -5,20 +5,72 @@ shopt -s nocasematch
 tty_path="${1:-}"
 fallback="${2:-shell}"
 current_hint="${3:-}"
+proc_root="${OBBY_PROC_ROOT:-/proc}"
+
+command_agent=""
+
+classify_agent_command() {
+  local command_value="${1##*/}"
+  command_agent=""
+
+  case "$command_value" in
+    codex|codex-*|codex_linux*|codex.exe)
+      command_agent="codex"
+      ;;
+    claude|claude-code|claude.exe)
+      command_agent="claude"
+      ;;
+    kimi|kimi-code|kimi-cli|kimi.exe|kimi-code.exe)
+      command_agent="kimi"
+      ;;
+    deepseek|deepseek-cli|deepseek-coder|deepseek.exe|deepseek-cli.exe|deepseek-coder.exe)
+      command_agent="deepseek"
+      ;;
+    gemini|gemini-cli|gemini.exe|gemini-cli.exe)
+      command_agent="gemini"
+      ;;
+    antigravity|antigravity-cli|antigravity.exe|antigravity-cli.exe)
+      command_agent="antigravity"
+      ;;
+    qwen|qwen-code|qwen-cli|qwen.exe|qwen-code.exe|qwen-cli.exe)
+      command_agent="qwen"
+      ;;
+    opencode|opencode-ai|opencode.exe|opencode-ai.exe)
+      command_agent="opencode"
+      ;;
+    aider|aider-chat|aider.exe|aider-chat.exe)
+      command_agent="aider"
+      ;;
+    goose|goose-cli|goose.exe|goose-cli.exe)
+      command_agent="goose"
+      ;;
+    copilot|copilot-cli|github-copilot|copilot.exe|copilot-cli.exe)
+      command_agent="copilot"
+      ;;
+    amp|ampcode|amp.exe|ampcode.exe)
+      command_agent="amp"
+      ;;
+    cursor-agent|cursor-agent.exe)
+      command_agent="cursor"
+      ;;
+    kiro|kiro-cli|kiro.exe|kiro-cli.exe)
+      command_agent="kiro"
+      ;;
+    vibe|mistral-vibe|vibe.exe|mistral-vibe.exe)
+      command_agent="vibe"
+      ;;
+  esac
+}
+
+classify_agent_command "$current_hint"
+# Claude is intentionally not a hint fast path: custom wrappers can run Claude
+# against DeepSeek and are identified from the foreground process environment.
+if [[ -n "$command_agent" && "$command_agent" != "claude" ]]; then
+  printf '%s\n' "$command_agent"
+  exit 0
+fi
 
 case "${current_hint##*/}" in
-  codex|codex-*|codex_linux*|codex.exe)
-    printf 'codex\n'
-    exit 0
-    ;;
-  claude|claude-code|claude.exe)
-    printf 'claude\n'
-    exit 0
-    ;;
-  kimi|kimi-code|kimi-cli|kimi.exe|kimi-code.exe)
-    printf 'kimi\n'
-    exit 0
-    ;;
   sh|bash|zsh|fish|dash|ksh)
     printf '%s\n' "$fallback"
     exit 0
@@ -40,24 +92,30 @@ agent_label=""
 runtime_label=""
 leader_comm=""
 
+process_uses_deepseek() {
+  local pid_value="$1"
+  local environ_path
+
+  [[ "$pid_value" =~ ^[0-9]+$ ]] || return 1
+  environ_path="$proc_root/$pid_value/environ"
+  [[ -r "$environ_path" ]] || return 1
+
+  # Never print environment contents: wrappers commonly carry API keys.
+  # Match only explicit identity/model variables, not arbitrary secret values.
+  LC_ALL=C grep -aEiq \
+    '(OBBY_AGENT_LABEL=deepseek([^[:alnum:]_-]|$)|(ANTHROPIC_BASE_URL|ANTHROPIC_MODEL|ANTHROPIC_DEFAULT_OPUS_MODEL|ANTHROPIC_DEFAULT_SONNET_MODEL|ANTHROPIC_DEFAULT_HAIKU_MODEL|ANTHROPIC_SMALL_FAST_MODEL|CLAUDE_CODE_SUBAGENT_MODEL)=[^[:cntrl:]]*deepseek)' \
+    "$environ_path" 2>/dev/null
+}
+
 agent_from_process() {
   local comm_value="${1##*/}"
   local args_value="$2"
 
-  case "$comm_value" in
-    codex|codex-*|codex_linux*|codex.exe)
-      printf 'codex\n'
-      return
-      ;;
-    claude|claude-code|claude.exe)
-      printf 'claude\n'
-      return
-      ;;
-    kimi|kimi-code|kimi-cli|kimi.exe|kimi-code.exe)
-      printf 'kimi\n'
-      return
-      ;;
-  esac
+  classify_agent_command "$comm_value"
+  if [[ -n "$command_agent" ]]; then
+    printf '%s\n' "$command_agent"
+    return
+  fi
 
   # npm-installed AI CLIs commonly leave `node` as tmux's current command.
   # Match their executable/module paths, not arbitrary prompt text.
@@ -76,6 +134,49 @@ agent_from_process() {
     [[ "$args_value" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
     [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@moonshot-ai/)?kimi(-code|-cli)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'kimi\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/deepseek(-cli|-coder)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@deepseek-ai/deepseek(-cli|-coder)?/ ]] ||
+    [[ "$args_value" =~ /deepseek-(cli|coder)/(cli|bin|dist)(\.js)?($|[[:space:]/]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@deepseek-ai/)?deepseek(-cli|-coder)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'deepseek\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/gemini(-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@google/gemini-cli/ ]] ||
+    [[ "$args_value" =~ /gemini-cli/(cli|bin|dist)(\.js)?($|[[:space:]/]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@google/)?gemini-cli(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'gemini\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/antigravity(-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@google/antigravity-cli/ ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@google/)?antigravity-cli(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'antigravity\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/qwen(-code|-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@qwen-code/qwen-code/ ]] ||
+    [[ "$args_value" =~ /qwen-code/(cli|bin|dist)(\.js)?($|[[:space:]/]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@qwen-code/)?qwen(-code)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'qwen\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/opencode(-ai)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /opencode-ai/(cli|bin|dist)(\.js)?($|[[:space:]/]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+opencode(-ai)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'opencode\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/copilot(-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@github/copilot/ ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+@github/copilot(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+    printf 'copilot\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/aider(-chat)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])-m[[:space:]]+aider($|[[:space:].]) ]] ||
+    [[ "$args_value" =~ /aider(_chat)?/(main|cli)(\.py)?($|[[:space:]/]) ]]; then
+    printf 'aider\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/goose(-cli)?($|[[:space:]]) ]]; then
+    printf 'goose\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/(amp|ampcode)($|[[:space:]]) ]]; then
+    printf 'amp\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/cursor-agent($|[[:space:]]) ]]; then
+    printf 'cursor\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/kiro(-cli)?($|[[:space:]]) ]]; then
+    printf 'kiro\n'
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/(mistral-)?vibe($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])-m[[:space:]]+(mistral_)?vibe($|[[:space:].]) ]] ||
+    [[ "$args_value" =~ /(mistral_)?vibe/(main|cli)(\.py)?($|[[:space:]/]) ]]; then
+    printf 'vibe\n'
   fi
 }
 
@@ -111,7 +212,7 @@ runtime_from_process() {
   esac
 }
 
-while read -r _pid _ppid stat comm args; do
+while read -r pid _ppid stat comm args; do
   [[ "$stat" == *+* ]] || continue
   args="${args:-$comm}"
 
@@ -122,7 +223,10 @@ while read -r _pid _ppid stat comm args; do
     leader_comm="$comm"
   fi
 
-  if [[ -z "$agent_label" ]]; then
+  # A DeepSeek-backed Claude wrapper must override an earlier plain-Claude row.
+  if [[ "${comm##*/}" =~ ^claude(-code)?(\.exe)?$ ]] && process_uses_deepseek "$pid"; then
+    agent_label="deepseek"
+  elif [[ -z "$agent_label" ]]; then
     agent_label="$(agent_from_process "$comm" "$args")"
   fi
   if [[ -z "$runtime_label" ]]; then

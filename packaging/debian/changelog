@@ -1,3 +1,9 @@
+obbyconfigs (0.5.4-1) unstable; urgency=medium
+
+  * Detect DeepSeek-backed Claude wrappers and additional coding-agent CLIs.
+
+ -- obnoxiousmods <noreply@github.com>  Wed, 29 Jul 2026 16:20:00 -0700
+
 obbyconfigs (0.5.3-1) unstable; urgency=medium
 
   * Avoid repeated subprocesses during tmux title refreshes.

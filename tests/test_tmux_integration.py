@@ -19,6 +19,61 @@ PANE_TITLE = ROOT / "src/obbyconfigs/templates/tmux-bin/pane-title"
 
 @unittest.skipUnless(shutil.which("tmux") and shutil.which("node"), "tmux and node are required")
 class TmuxIntegrationTests(unittest.TestCase):
+    @unittest.skipUnless(Path("/proc/self/environ").is_file(), "Linux procfs is required")
+    def test_real_deepseek_backed_claude_environment(self) -> None:
+        socket_name = f"obbyconfigs-deepseek-test-{uuid.uuid4().hex}"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fixture_dir = Path(temp_dir)
+            claude_fixture = fixture_dir / "claude"
+            claude_fixture.symlink_to(shutil.which("sleep") or "/usr/bin/sleep")
+
+            try:
+                subprocess.run(
+                    [
+                        "tmux",
+                        "-L",
+                        socket_name,
+                        "-f",
+                        "/dev/null",
+                        "new-session",
+                        "-d",
+                        f"env ANTHROPIC_BASE_URL=https://api.deepseek.example {claude_fixture} 30",
+                    ],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+
+                deadline = time.monotonic() + 5
+                tty = ""
+                command = ""
+                while time.monotonic() < deadline:
+                    tty, command = subprocess.run(
+                        ["tmux", "-L", socket_name, "display-message", "-p", "#{pane_tty}|#{pane_current_command}"],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    ).stdout.strip().split("|", 1)
+                    if command == "claude":
+                        break
+                    time.sleep(0.1)
+
+                self.assertEqual(command, "claude")
+                detected = subprocess.run(
+                    [str(PANE_TITLE), tty, command, command],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                self.assertEqual(detected, "deepseek")
+            finally:
+                subprocess.run(
+                    ["tmux", "-L", socket_name, "kill-server"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+
     def test_real_tmux_tty_and_node_wrappers(self) -> None:
         socket_name = f"obbyconfigs-test-{uuid.uuid4().hex}"
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -27,6 +82,18 @@ class TmuxIntegrationTests(unittest.TestCase):
                 "codex": "codex",
                 "claude": "claude",
                 "kimi-code": "kimi",
+                "deepseek": "deepseek",
+                "gemini": "gemini",
+                "antigravity-cli": "antigravity",
+                "qwen": "qwen",
+                "opencode": "opencode",
+                "aider": "aider",
+                "goose": "goose",
+                "copilot": "copilot",
+                "amp": "amp",
+                "cursor-agent": "cursor",
+                "kiro-cli": "kiro",
+                "vibe": "vibe",
             }
             for script_name in fixtures:
                 (fixture_dir / script_name).write_text("setInterval(() => {}, 1000);\n", encoding="utf-8")
