@@ -18,15 +18,24 @@ class PaneTitleTests(unittest.TestCase):
         tty: str = "/dev/pts/42",
         fallback: str = "project",
         current_hint: str | None = None,
+        process_environments: dict[int, dict[str, str]] | None = None,
     ) -> str:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             mock_ps = temp_path / "ps"
             mock_ps.write_text("#!/bin/sh\nprintf '%s\\n' \"$OBBY_TEST_PS_OUTPUT\"\n", encoding="utf-8")
             mock_ps.chmod(0o755)
+            proc_root = temp_path / "proc"
+            proc_root.mkdir()
+            for pid, variables in (process_environments or {}).items():
+                process_dir = proc_root / str(pid)
+                process_dir.mkdir()
+                environment = b"\0".join(f"{name}={value}".encode() for name, value in variables.items()) + b"\0"
+                (process_dir / "environ").write_bytes(environment)
             env = os.environ.copy()
             env["PATH"] = f"{temp_path}{os.pathsep}{env['PATH']}"
             env["OBBY_TEST_PS_OUTPUT"] = fixture
+            env["OBBY_PROC_ROOT"] = str(proc_root)
             command = [str(PANE_TITLE), tty, fallback]
             if current_hint is not None:
                 command.append(current_hint)
@@ -43,16 +52,57 @@ class PaneTitleTests(unittest.TestCase):
         cases = {
             "codex": "codex",
             "CODEX-LINUX-X64": "codex",
-            "claude": "claude",
-            "CLAUDE-CODE": "claude",
             "kimi": "kimi",
             "KIMI-CODE": "kimi",
+            "deepseek": "deepseek",
+            "DEEPSEEK-CLI": "deepseek",
+            "gemini": "gemini",
+            "antigravity-cli": "antigravity",
+            "qwen": "qwen",
+            "opencode": "opencode",
+            "aider": "aider",
+            "goose": "goose",
+            "copilot": "copilot",
+            "amp": "amp",
+            "cursor-agent": "cursor",
+            "kiro-cli": "kiro",
+            "vibe": "vibe",
             "zsh": "project",
             "BASH": "project",
         }
         for hint, expected in cases.items():
             with self.subTest(hint=hint):
                 self.assertEqual(self.run_title("should not be read", current_hint=hint), expected)
+
+    def test_claude_hint_scans_environment_for_deepseek_wrapper(self) -> None:
+        fixture = "100 1 Sl+ claude claude --resume"
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                current_hint="claude",
+                process_environments={100: {"ANTHROPIC_BASE_URL": "https://api.deepseek.example/v1"}},
+            ),
+            "deepseek",
+        )
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                current_hint="claude",
+                process_environments={100: {"ANTHROPIC_BASE_URL": "https://api.anthropic.com"}},
+            ),
+            "claude",
+        )
+
+    def test_explicit_agent_marker_identifies_custom_deepseek_wrapper(self) -> None:
+        fixture = "100 1 Sl+ claude claude --resume"
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                current_hint="claude",
+                process_environments={100: {"OBBY_AGENT_LABEL": "deepseek"}},
+            ),
+            "deepseek",
+        )
 
     def test_rejects_missing_non_device_and_option_like_ttys(self) -> None:
         fixture = "100 1 Sl+ codex codex"
@@ -84,6 +134,30 @@ class PaneTitleTests(unittest.TestCase):
             "kimi-code": "kimi",
             "kimi-cli": "kimi",
             "/opt/bin/KIMI-CODE": "kimi",
+            "deepseek": "deepseek",
+            "deepseek-cli": "deepseek",
+            "deepseek-coder": "deepseek",
+            "/opt/bin/DEEPSEEK": "deepseek",
+            "gemini": "gemini",
+            "gemini-cli": "gemini",
+            "antigravity": "antigravity",
+            "antigravity-cli": "antigravity",
+            "qwen": "qwen",
+            "qwen-code": "qwen",
+            "opencode": "opencode",
+            "opencode-ai": "opencode",
+            "aider": "aider",
+            "aider-chat": "aider",
+            "goose": "goose",
+            "copilot": "copilot",
+            "github-copilot": "copilot",
+            "amp": "amp",
+            "ampcode": "amp",
+            "cursor-agent": "cursor",
+            "kiro": "kiro",
+            "kiro-cli": "kiro",
+            "vibe": "vibe",
+            "mistral-vibe": "vibe",
         }
         for command, expected in cases.items():
             with self.subTest(command=command):
@@ -122,6 +196,35 @@ class PaneTitleTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual(self.run_title(f"100 1 Sl+ node {command}"), "kimi")
 
+    def test_additional_agent_wrapper_signatures(self) -> None:
+        cases = {
+            "node /home/me/.local/bin/deepseek": "deepseek",
+            "node /usr/local/lib/node_modules/@deepseek-ai/deepseek-cli/dist/cli.js": "deepseek",
+            "node /home/me/.local/bin/gemini": "gemini",
+            "node /usr/local/lib/node_modules/@google/gemini-cli/dist/index.js": "gemini",
+            "node /home/me/.local/bin/antigravity-cli": "antigravity",
+            "node /home/me/.local/bin/qwen": "qwen",
+            "node /usr/local/lib/node_modules/@qwen-code/qwen-code/dist/cli.js": "qwen",
+            "node /home/me/.local/bin/opencode": "opencode",
+            "node /usr/local/lib/node_modules/opencode-ai/bin/opencode": "opencode",
+            "node /home/me/.local/bin/copilot": "copilot",
+            "node /usr/local/lib/node_modules/@github/copilot/index.js": "copilot",
+            "node /home/me/.local/bin/goose": "goose",
+            "node /home/me/.local/bin/amp": "amp",
+            "node /home/me/.local/bin/cursor-agent": "cursor",
+            "node /home/me/.local/bin/kiro-cli": "kiro",
+            "python -m aider": "aider",
+            "python3 /venv/lib/python3.13/site-packages/aider/main.py": "aider",
+            "python /home/me/.local/bin/aider": "aider",
+            "python -m mistral_vibe": "vibe",
+            "python3 /venv/lib/python3.13/site-packages/mistral_vibe/cli.py": "vibe",
+            "python /home/me/.local/bin/vibe": "vibe",
+        }
+        for command, expected in cases.items():
+            comm = command.split()[0]
+            with self.subTest(command=command):
+                self.assertEqual(self.run_title(f"100 1 Sl+ {comm} {command}"), expected)
+
     def test_package_manager_agent_launchers(self) -> None:
         cases = {
             "npm exec @openai/codex": "codex",
@@ -139,6 +242,16 @@ class PaneTitleTests(unittest.TestCase):
             "pnpm dlx kimi-cli": "kimi",
             "yarn kimi": "kimi",
             "bunx @moonshot-ai/kimi-code": "kimi",
+            "npm exec @deepseek-ai/deepseek-cli": "deepseek",
+            "npx deepseek-cli@latest": "deepseek",
+            "pnpm dlx deepseek-coder": "deepseek",
+            "npm exec @google/gemini-cli": "gemini",
+            "npx gemini-cli@latest": "gemini",
+            "npx @google/antigravity-cli": "antigravity",
+            "pnpm dlx @qwen-code/qwen-code": "qwen",
+            "yarn qwen-code": "qwen",
+            "bunx opencode-ai": "opencode",
+            "npm exec @github/copilot": "copilot",
         }
         for args, expected in cases.items():
             comm = args.split()[0]
@@ -179,6 +292,39 @@ class PaneTitleTests(unittest.TestCase):
         )
         self.assertEqual(self.run_title(fixture), "kimi")
 
+    def test_deepseek_claude_wrapper_beats_plain_claude_and_mcp_children(self) -> None:
+        fixture = "\n".join(
+            (
+                "100 1 Sl+ claude claude --resume",
+                "101 100 Sl+ node node /home/me/.local/share/camoufox-mcp/dist/index.js",
+                "102 100 Sl+ node node /home/me/.npm/_npx/pkg/node_modules/.bin/playwright-mcp",
+            )
+        )
+        environment = {
+            "ANTHROPIC_BASE_URL": "https://api.deepseek.example/anthropic",
+            "ANTHROPIC_API_KEY": "not-printed",
+            "ANTHROPIC_MODEL": "deepseek-chat",
+        }
+        self.assertEqual(self.run_title(fixture, process_environments={100: environment}), "deepseek")
+
+    def test_deepseek_environment_detection_does_not_depend_on_row_order(self) -> None:
+        fixture = "\n".join(
+            (
+                "100 1 Sl+ claude claude --resume",
+                "101 100 Sl+ claude claude-code --worker",
+            )
+        )
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                process_environments={
+                    100: {"ANTHROPIC_BASE_URL": "https://api.anthropic.com"},
+                    101: {"CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4"},
+                },
+            ),
+            "deepseek",
+        )
+
     def test_agent_detection_does_not_depend_on_ps_row_order(self) -> None:
         fixture = "\n".join(
             (
@@ -198,9 +344,58 @@ class PaneTitleTests(unittest.TestCase):
         )
         self.assertEqual(self.run_title(fixture), "node")
 
+    def test_background_deepseek_claude_wrapper_does_not_override_foreground_command(self) -> None:
+        fixture = "\n".join(
+            (
+                "100 1 Sl claude claude --resume",
+                "200 1 Sl+ node node server.js",
+            )
+        )
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                process_environments={100: {"ANTHROPIC_MODEL": "deepseek-chat"}},
+            ),
+            "node",
+        )
+
     def test_agent_name_in_arbitrary_arguments_does_not_false_positive(self) -> None:
-        fixture = "100 1 Sl+ node node server.js --title codex"
-        self.assertEqual(self.run_title(fixture), "node")
+        names = (
+            "codex",
+            "claude",
+            "kimi",
+            "deepseek",
+            "gemini",
+            "antigravity",
+            "qwen",
+            "opencode",
+            "aider",
+            "goose",
+            "copilot",
+            "amp",
+            "cursor",
+            "kiro",
+            "vibe",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                fixture = f"100 1 Sl+ node node server.js --title {name}"
+                self.assertEqual(self.run_title(fixture), "node")
+
+    def test_secret_value_does_not_identify_deepseek(self) -> None:
+        fixture = "100 1 Sl+ claude claude --resume"
+        self.assertEqual(
+            self.run_title(
+                fixture,
+                process_environments={
+                    100: {
+                        "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
+                        "ANTHROPIC_API_KEY": "deepseek-is-just-secret-text",
+                    }
+                },
+            ),
+            "claude",
+        )
 
     def test_node_runtime_labels(self) -> None:
         cases = {

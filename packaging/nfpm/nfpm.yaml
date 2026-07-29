@@ -1,7 +1,7 @@
 name: obbyconfigs
 arch: all
 platform: linux
-version: 0.5.3
+version: 0.5.4
 section: utils
 priority: optional
 maintainer: obnoxiousmods
@@ -36,8 +36,8 @@ contents:
     dst: /usr/bin/obbyinstaller
     file_info:
       mode: 0755
-  - src: ./dist/obbyconfigs-0.5.3-py3-none-any.whl
-    dst: /usr/share/obbyconfigs/obbyconfigs-0.5.3-py3-none-any.whl
+  - src: ./dist/obbyconfigs-0.5.4-py3-none-any.whl
+    dst: /usr/share/obbyconfigs/obbyconfigs-0.5.4-py3-none-any.whl
   - src: ./install.sh
     dst: /usr/share/obbyconfigs/install.sh
     file_info:
