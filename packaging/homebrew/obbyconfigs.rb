@@ -3,7 +3,7 @@ class Obbyconfigs < Formula
 
   desc "Obby's tmux, zsh, nano, and terminal config installer"
   homepage "https://github.com/obnoxiousmods/obbyconfigs"
-  url "https://github.com/obnoxiousmods/obbyconfigs.git", tag: "v0.5.2"
+  url "https://github.com/obnoxiousmods/obbyconfigs.git", tag: "v0.5.3"
   head "https://github.com/obnoxiousmods/obbyconfigs.git", branch: "main"
   license "MIT"
 

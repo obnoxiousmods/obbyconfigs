@@ -32,6 +32,7 @@ class InstallerTmuxTests(unittest.TestCase):
         self.assertIn("#{q:pane_tty}", rendered)
         self.assertIn("#{q;b:pane_current_path}", rendered)
         self.assertIn("#{q:pane_current_command}", rendered)
+        self.assertIn("#{q;b:pane_current_path} #{q:pane_current_command}", rendered)
         self.assertIn("#{q:pane_current_path}", rendered)
         self.assertNotIn("'#{pane_tty}'", rendered)
         self.assertNotIn("'#{pane_current_path}'", rendered)

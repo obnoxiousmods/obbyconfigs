@@ -1,8 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
+shopt -s nocasematch
 
 tty_path="${1:-}"
 fallback="${2:-shell}"
+current_hint="${3:-}"
+
+case "${current_hint##*/}" in
+  codex|codex-*|codex_linux*|codex.exe)
+    printf 'codex\n'
+    exit 0
+    ;;
+  claude|claude-code|claude.exe)
+    printf 'claude\n'
+    exit 0
+    ;;
+  kimi|kimi-code|kimi-cli|kimi.exe|kimi-code.exe)
+    printf 'kimi\n'
+    exit 0
+    ;;
+  sh|bash|zsh|fish|dash|ksh)
+    printf '%s\n' "$fallback"
+    exit 0
+    ;;
+esac
 
 tty_name="${tty_path#/dev/}"
 if [[ -z "$tty_name" || "$tty_name" == "$tty_path" || "$tty_name" == -* || "$tty_name" =~ [^[:alnum:]_./-] ]]; then
@@ -15,22 +36,15 @@ if [[ -z "$processes" ]]; then
   printf '%s\n' "$fallback"
   exit 0
 fi
-
 agent_label=""
 runtime_label=""
 leader_comm=""
 
-lowercase() {
-  LC_ALL=C tr '[:upper:]' '[:lower:]' <<<"$1"
-}
-
 agent_from_process() {
-  local comm_lower
-  local args_lower
-  comm_lower="$(lowercase "${1##*/}")"
-  args_lower="$(lowercase "$2")"
+  local comm_value="${1##*/}"
+  local args_value="$2"
 
-  case "$comm_lower" in
+  case "$comm_value" in
     codex|codex-*|codex_linux*|codex.exe)
       printf 'codex\n'
       return
@@ -47,52 +61,50 @@ agent_from_process() {
 
   # npm-installed AI CLIs commonly leave `node` as tmux's current command.
   # Match their executable/module paths, not arbitrary prompt text.
-  if [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/(@openai/)?codex(/|$|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ /@openai/codex/ ]] ||
-    [[ "$args_lower" =~ /codex-linux-[^/[:space:]]*/codex($|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@openai/)?codex(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+  if [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/(@openai/)?codex(/|$|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@openai/codex/ ]] ||
+    [[ "$args_value" =~ /codex-linux-[^/[:space:]]*/codex($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@openai/)?codex(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'codex\n'
-  elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/claude($|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ /@anthropic-ai/claude-code/ ]] ||
-    [[ "$args_lower" =~ /claude-code/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@anthropic-ai/)?claude(-code)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/claude($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@anthropic-ai/claude-code/ ]] ||
+    [[ "$args_value" =~ /claude-code/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@anthropic-ai/)?claude(-code)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'claude\n'
-  elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/kimi(-code|-cli)?($|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ /@moonshot-ai/kimi[^/]*/ ]] ||
-    [[ "$args_lower" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
-    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@moonshot-ai/)?kimi(-code|-cli)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
+  elif [[ "$args_value" =~ (^|[[:space:]])[^[:space:]]*/kimi(-code|-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ /@moonshot-ai/kimi[^/]*/ ]] ||
+    [[ "$args_value" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
+    [[ "$args_value" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@moonshot-ai/)?kimi(-code|-cli)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'kimi\n'
   fi
 }
 
 runtime_from_process() {
-  local comm_lower
-  local args_lower
-  comm_lower="$(lowercase "${1##*/}")"
-  args_lower="$(lowercase "$2")"
+  local comm_value="${1##*/}"
+  local args_value="$2"
 
-  case "$comm_lower" in
+  case "$comm_value" in
     node|nodejs|bun|deno)
-      if [[ "$args_lower" =~ (^|[[:space:]/])vite($|[[:space:]/]) ]]; then
+      if [[ "$args_value" =~ (^|[[:space:]/])vite($|[[:space:]/]) ]]; then
         printf 'vite\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])next($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])next($|[[:space:]/]) ]]; then
         printf 'next\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])astro($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])astro($|[[:space:]/]) ]]; then
         printf 'astro\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])tsx($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])tsx($|[[:space:]/]) ]]; then
         printf 'tsx\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])ts-node($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])ts-node($|[[:space:]/]) ]]; then
         printf 'ts-node\n'
       fi
       ;;
     python|python3|python[0-9]*)
-      if [[ "$args_lower" =~ (^|[[:space:]/])uvicorn($|[[:space:]/]) ]]; then
+      if [[ "$args_value" =~ (^|[[:space:]/])uvicorn($|[[:space:]/]) ]]; then
         printf 'uvicorn\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])gunicorn($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])gunicorn($|[[:space:]/]) ]]; then
         printf 'gunicorn\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])pytest($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])pytest($|[[:space:]/]) ]]; then
         printf 'pytest\n'
-      elif [[ "$args_lower" =~ (^|[[:space:]/])django-admin($|[[:space:]/]) ]]; then
+      elif [[ "$args_value" =~ (^|[[:space:]/])django-admin($|[[:space:]/]) ]]; then
         printf 'django\n'
       fi
       ;;
@@ -133,7 +145,7 @@ if [[ -z "$leader_comm" ]]; then
   exit 0
 fi
 
-case "$(lowercase "${leader_comm##*/}")" in
+case "${leader_comm##*/}" in
   sh|bash|zsh|fish|dash|ksh)
     printf '%s\n' "$fallback"
     ;;

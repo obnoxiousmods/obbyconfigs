@@ -1,6 +1,6 @@
 # Maintainer: obnoxiousmods
 pkgname=obbyconfigs
-pkgver=0.5.2
+pkgver=0.5.3
 pkgrel=1
 pkgdesc="Obby's tmux, zsh, Powerlevel10k, nano, and terminal config installer"
 arch=("any")
