@@ -5,69 +5,130 @@ tty_path="${1:-}"
 fallback="${2:-shell}"
 
 tty_name="${tty_path#/dev/}"
-if [[ -z "$tty_name" || "$tty_name" == "$tty_path" ]]; then
+if [[ -z "$tty_name" || "$tty_name" == "$tty_path" || "$tty_name" == -* || "$tty_name" =~ [^[:alnum:]_./-] ]]; then
   printf '%s\n' "$fallback"
   exit 0
 fi
 
-line="$(
-  ps -t "$tty_name" -o pid=,ppid=,stat=,comm=,args= 2>/dev/null |
-    awk '
-      $3 ~ /\+/ { current = $0 }
-      END {
-        if (current != "") {
-          print current
-        }
-      }
-    '
-)" || true
-
-if [[ -z "$line" ]]; then
+processes="$(ps -t "$tty_name" -o pid=,ppid=,stat=,comm=,args= 2>/dev/null || true)"
+if [[ -z "$processes" ]]; then
   printf '%s\n' "$fallback"
   exit 0
 fi
 
-# ps fields: pid ppid stat comm args...
-read -r _pid _ppid _stat comm args <<<"$line"
-args="${args:-$comm}"
+agent_label=""
+runtime_label=""
+leader_comm=""
+leader_args=""
 
-case "$comm" in
-  node|nodejs|bun|deno)
-    if [[ "$args" =~ (^|[[:space:]/])codex($|[[:space:]]) ]]; then
+agent_from_process() {
+  local comm_lower="${1,,}"
+  local args_lower="${2,,}"
+
+  case "$comm_lower" in
+    codex|codex-*|codex_linux*|codex.exe)
       printf 'codex\n'
-    elif [[ "$args" =~ (^|[[:space:]/])claude($|[[:space:]]) ]]; then
+      return
+      ;;
+    claude|claude-code|claude.exe)
       printf 'claude\n'
-    elif [[ "$args" =~ (^|[[:space:]/])vite($|[[:space:]]) ]]; then
-      printf 'vite\n'
-    elif [[ "$args" =~ (^|[[:space:]/])next($|[[:space:]]) ]]; then
-      printf 'next\n'
-    elif [[ "$args" =~ (^|[[:space:]/])astro($|[[:space:]]) ]]; then
-      printf 'astro\n'
-    elif [[ "$args" =~ (^|[[:space:]/])tsx($|[[:space:]]) ]]; then
-      printf 'tsx\n'
-    elif [[ "$args" =~ (^|[[:space:]/])ts-node($|[[:space:]]) ]]; then
-      printf 'ts-node\n'
-    else
-      printf '%s\n' "$comm"
-    fi
-    ;;
-  python|python3)
-    if [[ "$args" =~ (^|[[:space:]/])uvicorn($|[[:space:]]) ]]; then
-      printf 'uvicorn\n'
-    elif [[ "$args" =~ (^|[[:space:]/])gunicorn($|[[:space:]]) ]]; then
-      printf 'gunicorn\n'
-    elif [[ "$args" =~ (^|[[:space:]/])pytest($|[[:space:]]) ]]; then
-      printf 'pytest\n'
-    elif [[ "$args" =~ (^|[[:space:]/])django-admin($|[[:space:]]) ]]; then
-      printf 'django\n'
-    else
-      printf '%s\n' "$comm"
-    fi
-    ;;
-  sh|bash|zsh|fish)
+      return
+      ;;
+    kimi|kimi-code|kimi-cli|kimi.exe|kimi-code.exe)
+      printf 'kimi\n'
+      return
+      ;;
+  esac
+
+  # npm-installed AI CLIs commonly leave `node` as tmux's current command.
+  # Match their executable/module paths, not arbitrary prompt text.
+  if [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/(@openai/)?codex(/|$|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ /@openai/codex/ ]] ||
+    [[ "$args_lower" =~ /codex-linux-[^/[:space:]]*/codex($|[[:space:]]) ]]; then
+    printf 'codex\n'
+  elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/claude($|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ /@anthropic-ai/claude-code/ ]] ||
+    [[ "$args_lower" =~ /claude-code/(cli|bin)(\.js)?($|[[:space:]]) ]]; then
+    printf 'claude\n'
+  elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/kimi(-code|-cli)?($|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ /@moonshot-ai/kimi[^/]*/ ]] ||
+    [[ "$args_lower" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]]; then
+    printf 'kimi\n'
+  fi
+}
+
+runtime_from_process() {
+  local comm_lower="${1,,}"
+  local args_lower="${2,,}"
+
+  case "$comm_lower" in
+    node|nodejs|bun|deno)
+      if [[ "$args_lower" =~ (^|[[:space:]/])vite($|[[:space:]/]) ]]; then
+        printf 'vite\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])next($|[[:space:]/]) ]]; then
+        printf 'next\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])astro($|[[:space:]/]) ]]; then
+        printf 'astro\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])tsx($|[[:space:]/]) ]]; then
+        printf 'tsx\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])ts-node($|[[:space:]/]) ]]; then
+        printf 'ts-node\n'
+      fi
+      ;;
+    python|python3|python[0-9]*)
+      if [[ "$args_lower" =~ (^|[[:space:]/])uvicorn($|[[:space:]/]) ]]; then
+        printf 'uvicorn\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])gunicorn($|[[:space:]/]) ]]; then
+        printf 'gunicorn\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])pytest($|[[:space:]/]) ]]; then
+        printf 'pytest\n'
+      elif [[ "$args_lower" =~ (^|[[:space:]/])django-admin($|[[:space:]/]) ]]; then
+        printf 'django\n'
+      fi
+      ;;
+  esac
+}
+
+while read -r _pid _ppid stat comm args; do
+  [[ "$stat" == *+* ]] || continue
+  args="${args:-$comm}"
+
+  # ps normally lists the foreground process-group leader first. Preserve it
+  # as the generic fallback, while scanning every foreground member for a
+  # meaningful CLI. Agent CLIs often spawn same-group Node MCP children.
+  if [[ -z "$leader_comm" ]]; then
+    leader_comm="$comm"
+    leader_args="$args"
+  fi
+
+  if [[ -z "$agent_label" ]]; then
+    agent_label="$(agent_from_process "$comm" "$args")"
+  fi
+  if [[ -z "$runtime_label" ]]; then
+    runtime_label="$(runtime_from_process "$comm" "$args")"
+  fi
+done <<<"$processes"
+
+if [[ -n "$agent_label" ]]; then
+  printf '%s\n' "$agent_label"
+  exit 0
+fi
+
+if [[ -n "$runtime_label" ]]; then
+  printf '%s\n' "$runtime_label"
+  exit 0
+fi
+
+if [[ -z "$leader_comm" ]]; then
+  printf '%s\n' "$fallback"
+  exit 0
+fi
+
+case "${leader_comm,,}" in
+  sh|bash|zsh|fish|dash|ksh)
     printf '%s\n' "$fallback"
     ;;
   *)
-    printf '%s\n' "$comm"
+    printf '%s\n' "$leader_comm"
     ;;
 esac

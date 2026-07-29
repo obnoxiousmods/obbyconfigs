@@ -40,5 +40,11 @@ jobs:
       - name: Compile
         run: uv run python -m compileall obbyinstaller.py src
 
+      - name: Unit tests
+        run: uv run python -m unittest discover -s tests -v
+
+      - name: Shell syntax
+        run: bash -n src/obbyconfigs/templates/tmux-bin/*
+
       - name: Smoke test
         run: uv run obbyinstaller --list-plan --skip-packages --skip-shell-change
