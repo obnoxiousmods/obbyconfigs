@@ -51,11 +51,14 @@ class PaneTitleTests(unittest.TestCase):
         cases = {
             "codex": "codex",
             "codex-linux-x64": "codex",
+            "/opt/bin/CODEX": "codex",
             "claude": "claude",
             "claude-code": "claude",
+            "/opt/bin/CLAUDE": "claude",
             "kimi": "kimi",
             "kimi-code": "kimi",
             "kimi-cli": "kimi",
+            "/opt/bin/KIMI-CODE": "kimi",
         }
         for command, expected in cases.items():
             with self.subTest(command=command):
@@ -94,6 +97,29 @@ class PaneTitleTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual(self.run_title(f"100 1 Sl+ node {command}"), "kimi")
 
+    def test_package_manager_agent_launchers(self) -> None:
+        cases = {
+            "npm exec @openai/codex": "codex",
+            "npx @openai/codex@latest": "codex",
+            "pnpm dlx codex": "codex",
+            "yarn codex": "codex",
+            "bunx codex": "codex",
+            "npm exec @anthropic-ai/claude-code": "claude",
+            "npx claude-code@latest": "claude",
+            "pnpx claude": "claude",
+            "yarn claude": "claude",
+            "bunx @anthropic-ai/claude-code": "claude",
+            "npm exec @moonshot-ai/kimi-cli": "kimi",
+            "npx kimi-code@latest": "kimi",
+            "pnpm dlx kimi-cli": "kimi",
+            "yarn kimi": "kimi",
+            "bunx @moonshot-ai/kimi-code": "kimi",
+        }
+        for args, expected in cases.items():
+            comm = args.split()[0]
+            with self.subTest(args=args):
+                self.assertEqual(self.run_title(f"100 1 Sl+ {comm} {args}"), expected)
+
     def test_real_codex_tree_prefers_agent_over_node_wrapper_and_helpers(self) -> None:
         fixture = "\n".join(
             (
@@ -127,6 +153,16 @@ class PaneTitleTests(unittest.TestCase):
             )
         )
         self.assertEqual(self.run_title(fixture), "kimi")
+
+    def test_agent_detection_does_not_depend_on_ps_row_order(self) -> None:
+        fixture = "\n".join(
+            (
+                "500 100 Sl+ node node /home/me/.local/share/camoufox-mcp/dist/index.js",
+                "100 1 Sl+ claude claude --resume",
+                "501 500 Sl+ node node /home/me/.npm/_npx/pkg/node_modules/.bin/camoufox-mcp-server",
+            )
+        )
+        self.assertEqual(self.run_title(fixture), "claude")
 
     def test_background_agent_does_not_override_foreground_command(self) -> None:
         fixture = "\n".join(
@@ -174,6 +210,12 @@ class PaneTitleTests(unittest.TestCase):
             )
         )
         self.assertEqual(self.run_title(fixture), "make")
+
+    def test_script_remains_compatible_with_macos_bash_3(self) -> None:
+        script = PANE_TITLE.read_text(encoding="utf-8")
+        self.assertNotIn(",,}", script)
+        self.assertNotIn("declare -A", script)
+        self.assertNotIn("mapfile", script)
 
 
 if __name__ == "__main__":
