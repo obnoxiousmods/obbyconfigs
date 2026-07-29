@@ -179,7 +179,11 @@ def render_zshrc(paths: InstallPaths) -> str:
 
 
 def render_tmux_conf(paths: InstallPaths) -> str:
-    return read_template("tmux.conf").replace("__OBBY_TMUX_BIN__", str(paths.tmux_bin))
+    tmux_bin = str(paths.tmux_bin)
+    if "\n" in tmux_bin or "\r" in tmux_bin:
+        raise ValueError("tmux helper path cannot contain newlines")
+    quoted_tmux_bin = '"' + tmux_bin.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$") + '"'
+    return read_template("tmux.conf").replace("__OBBY_TMUX_BIN__", quoted_tmux_bin)
 
 
 def tmux_helper_scripts() -> dict[str, str]:

@@ -1,3 +1,10 @@
+obbyconfigs (0.5.2-1) unstable; urgency=medium
+
+  * Support macOS Bash 3 and safely quote tmux helper arguments.
+  * Expand AI CLI launch detection and end-to-end tmux coverage.
+
+ -- obnoxiousmods <noreply@github.com>  Wed, 29 Jul 2026 14:50:00 -0700
+
 obbyconfigs (0.5.1-1) unstable; urgency=medium
 
   * Reliably detect Codex, Claude, and Kimi in tmux pane titles.

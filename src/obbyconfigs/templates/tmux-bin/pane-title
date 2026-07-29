@@ -19,11 +19,16 @@ fi
 agent_label=""
 runtime_label=""
 leader_comm=""
-leader_args=""
+
+lowercase() {
+  LC_ALL=C tr '[:upper:]' '[:lower:]' <<<"$1"
+}
 
 agent_from_process() {
-  local comm_lower="${1,,}"
-  local args_lower="${2,,}"
+  local comm_lower
+  local args_lower
+  comm_lower="$(lowercase "${1##*/}")"
+  args_lower="$(lowercase "$2")"
 
   case "$comm_lower" in
     codex|codex-*|codex_linux*|codex.exe)
@@ -44,22 +49,27 @@ agent_from_process() {
   # Match their executable/module paths, not arbitrary prompt text.
   if [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/(@openai/)?codex(/|$|[[:space:]]) ]] ||
     [[ "$args_lower" =~ /@openai/codex/ ]] ||
-    [[ "$args_lower" =~ /codex-linux-[^/[:space:]]*/codex($|[[:space:]]) ]]; then
+    [[ "$args_lower" =~ /codex-linux-[^/[:space:]]*/codex($|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@openai/)?codex(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'codex\n'
   elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/claude($|[[:space:]]) ]] ||
     [[ "$args_lower" =~ /@anthropic-ai/claude-code/ ]] ||
-    [[ "$args_lower" =~ /claude-code/(cli|bin)(\.js)?($|[[:space:]]) ]]; then
+    [[ "$args_lower" =~ /claude-code/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@anthropic-ai/)?claude(-code)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'claude\n'
   elif [[ "$args_lower" =~ (^|[[:space:]])[^[:space:]]*/kimi(-code|-cli)?($|[[:space:]]) ]] ||
     [[ "$args_lower" =~ /@moonshot-ai/kimi[^/]*/ ]] ||
-    [[ "$args_lower" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]]; then
+    [[ "$args_lower" =~ /kimi-(code|cli)/(cli|bin)(\.js)?($|[[:space:]]) ]] ||
+    [[ "$args_lower" =~ (^|[[:space:]])(npm|npx|pnpm|pnpx|yarn|yarnpkg|bunx|corepack)([[:space:]]+(exec|dlx|x))?[[:space:]]+(@moonshot-ai/)?kimi(-code|-cli)?(@[^[:space:]]*)?($|[[:space:]]) ]]; then
     printf 'kimi\n'
   fi
 }
 
 runtime_from_process() {
-  local comm_lower="${1,,}"
-  local args_lower="${2,,}"
+  local comm_lower
+  local args_lower
+  comm_lower="$(lowercase "${1##*/}")"
+  args_lower="$(lowercase "$2")"
 
   case "$comm_lower" in
     node|nodejs|bun|deno)
@@ -98,7 +108,6 @@ while read -r _pid _ppid stat comm args; do
   # meaningful CLI. Agent CLIs often spawn same-group Node MCP children.
   if [[ -z "$leader_comm" ]]; then
     leader_comm="$comm"
-    leader_args="$args"
   fi
 
   if [[ -z "$agent_label" ]]; then
@@ -124,7 +133,7 @@ if [[ -z "$leader_comm" ]]; then
   exit 0
 fi
 
-case "${leader_comm,,}" in
+case "$(lowercase "${leader_comm##*/}")" in
   sh|bash|zsh|fish|dash|ksh)
     printf '%s\n' "$fallback"
     ;;

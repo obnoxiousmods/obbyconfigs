@@ -120,7 +120,7 @@ Shell features:
 
 - Machine-matching Dracula zsh prompt and tmux status templates.
 - tmux runtime OS icon detection for Arch/Manjaro, Ubuntu, Debian, Fedora/RHEL-style, openSUSE/SUSE, Alpine, NixOS, macOS, Windows-like shells, and generic Linux.
-- tmux pane/window naming that recognizes Codex, Claude, and Kimi across native binaries, npm/Node launchers, and same-process-group MCP helpers instead of displaying a generic `node` label.
+- tmux pane/window naming that recognizes Codex, Claude, and Kimi across native binaries, npm/Node/package-manager launchers, and same-process-group MCP helpers instead of displaying a generic `node` label. Detection is covered on Linux and macOS's system Bash 3.
 - tmux Git awareness for the active pane, including GitHub `owner/repo`, branch/commit, dirty marker, and ahead/behind indicators.
 - Auto-attach to the newest tmux session when an interactive shell starts outside tmux, or create `${OBBY_TMUX_SESSION:-main}` when no session exists. Set `NO_AUTO_TMUX=1` to disable it for that shell.
 - Oh My Zsh
