@@ -1,5 +1,5 @@
 Name:           obbyconfigs
-Version:        0.5.2
+Version:        0.5.3
 Release:        1%{?dist}
 Summary:        Obby's tmux, zsh, nano, and terminal config installer
 License:        MIT
@@ -48,6 +48,10 @@ install -Dm644 LICENSE %{buildroot}%{_licensedir}/obbyconfigs/LICENSE
 %{_datadir}/obbyconfigs/install.sh
 
 %changelog
+* Wed Jul 29 2026 obnoxiousmods <noreply@github.com> - 0.5.3-1
+- Avoid repeated subprocesses during tmux title refreshes.
+- Fast-path direct agent and idle-shell pane names.
+
 * Wed Jul 29 2026 obnoxiousmods <noreply@github.com> - 0.5.2-1
 - Support macOS Bash 3 and safely quote tmux helper arguments.
 - Expand AI CLI launch detection and end-to-end tmux coverage.

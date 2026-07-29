@@ -11,7 +11,14 @@ PANE_TITLE = ROOT / "src/obbyconfigs/templates/tmux-bin/pane-title"
 
 
 class PaneTitleTests(unittest.TestCase):
-    def run_title(self, fixture: str, *, tty: str = "/dev/pts/42", fallback: str = "project") -> str:
+    def run_title(
+        self,
+        fixture: str,
+        *,
+        tty: str = "/dev/pts/42",
+        fallback: str = "project",
+        current_hint: str | None = None,
+    ) -> str:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             mock_ps = temp_path / "ps"
@@ -20,14 +27,32 @@ class PaneTitleTests(unittest.TestCase):
             env = os.environ.copy()
             env["PATH"] = f"{temp_path}{os.pathsep}{env['PATH']}"
             env["OBBY_TEST_PS_OUTPUT"] = fixture
+            command = [str(PANE_TITLE), tty, fallback]
+            if current_hint is not None:
+                command.append(current_hint)
             result = subprocess.run(
-                [str(PANE_TITLE), tty, fallback],
+                command,
                 check=True,
                 capture_output=True,
                 text=True,
                 env=env,
             )
         return result.stdout.strip()
+
+    def test_tmux_command_hint_fast_paths_without_calling_ps(self) -> None:
+        cases = {
+            "codex": "codex",
+            "CODEX-LINUX-X64": "codex",
+            "claude": "claude",
+            "CLAUDE-CODE": "claude",
+            "kimi": "kimi",
+            "KIMI-CODE": "kimi",
+            "zsh": "project",
+            "BASH": "project",
+        }
+        for hint, expected in cases.items():
+            with self.subTest(hint=hint):
+                self.assertEqual(self.run_title("should not be read", current_hint=hint), expected)
 
     def test_rejects_missing_non_device_and_option_like_ttys(self) -> None:
         fixture = "100 1 Sl+ codex codex"
@@ -216,6 +241,8 @@ class PaneTitleTests(unittest.TestCase):
         self.assertNotIn(",,}", script)
         self.assertNotIn("declare -A", script)
         self.assertNotIn("mapfile", script)
+        self.assertNotIn("tr '[:upper:]' '[:lower:]'", script)
+        self.assertIn("shopt -s nocasematch", script)
 
 
 if __name__ == "__main__":
